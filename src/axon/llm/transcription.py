@@ -7,8 +7,6 @@ Groq Whisper API — the same API key already used for chat completions.
 from __future__ import annotations
 
 import logging
-import tempfile
-from pathlib import Path
 
 import httpx
 from groq import APIError, AsyncGroq
@@ -77,30 +75,22 @@ class TranscriptionClient:
         Raises:
             LLMError: If the Groq API returns an error.
         """
-        # Groq's SDK expects a file-like tuple: (filename, bytes, mime_type)
-        with tempfile.NamedTemporaryFile(suffix=Path(file_name).suffix, delete=False) as tmp:
-            tmp.write(audio_bytes)
-            tmp_path = tmp.name
-
         logger.info(
             "Sending audio to Groq Whisper", extra={"model": self._model, "bytes": len(audio_bytes)}
         )
 
         try:
-            with open(tmp_path, "rb") as f:
-                transcription = await self._client.audio.transcriptions.create(
-                    file=(file_name, f.read()),
-                    model=self._model,
-                    response_format="text",
-                )
+            transcription = await self._client.audio.transcriptions.create(
+                file=(file_name, audio_bytes),
+                model=self._model,
+                response_format="text",
+            )
         except APIError as exc:
             logger.error("Groq Whisper API error", extra={"error": str(exc)})
             raise LLMError(f"Transcription error: {exc}") from exc
         except Exception as exc:
             logger.error("Unexpected transcription error", extra={"error": str(exc)})
             raise LLMError(f"Transcription error: {exc}") from exc
-        finally:
-            Path(tmp_path).unlink(missing_ok=True)
 
         text = transcription if isinstance(transcription, str) else transcription.text
         logger.info("Transcription complete", extra={"chars": len(text)})

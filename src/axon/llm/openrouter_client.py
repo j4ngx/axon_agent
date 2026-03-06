@@ -36,7 +36,7 @@ class OpenRouterLLMClient:
     ) -> None:
         self._api_key = api_key
         self._model = model
-        self._timeout = timeout
+        self._client = httpx.AsyncClient(timeout=timeout)
 
     async def generate(
         self,
@@ -76,14 +76,13 @@ class OpenRouterLLMClient:
         )
 
         try:
-            async with httpx.AsyncClient(timeout=self._timeout) as client:
-                resp = await client.post(
-                    f"{_OPENROUTER_BASE_URL}/chat/completions",
-                    headers=headers,
-                    json=payload,
-                )
-                resp.raise_for_status()
-                data = resp.json()
+            resp = await self._client.post(
+                f"{_OPENROUTER_BASE_URL}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            resp.raise_for_status()
+            data = resp.json()
         except httpx.HTTPStatusError as exc:
             logger.error(
                 "OpenRouter HTTP error",
@@ -95,6 +94,10 @@ class OpenRouterLLMClient:
             raise LLMError(f"OpenRouter request error: {exc}") from exc
 
         return self._parse_response(data)
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client."""
+        await self._client.aclose()
 
     @staticmethod
     def _parse_response(data: dict[str, Any]) -> LLMResponse:

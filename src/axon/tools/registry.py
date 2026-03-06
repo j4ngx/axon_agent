@@ -82,10 +82,13 @@ class ToolRegistry:
         logger.info("MCP session tracked", extra={"total_sessions": len(self._mcp_sessions)})
 
     async def shutdown(self) -> None:
-        """Close all tracked MCP sessions."""
+        """Close all tracked MCP sessions and context managers."""
         for session in self._mcp_sessions:
             try:
-                await session.close()  # type: ignore[union-attr]
+                if hasattr(session, "close"):
+                    await session.close()  # type: ignore[union-attr]
+                elif hasattr(session, "__aexit__"):
+                    await session.__aexit__(None, None, None)  # type: ignore[union-attr]
             except Exception:
                 logger.exception("Error closing MCP session")
         self._mcp_sessions.clear()

@@ -17,7 +17,7 @@ class ToolError(AxonError):
     """Raised when a tool invocation fails."""
 
 
-class MemoryError(AxonError):
+class PersistenceError(AxonError):
     """Raised when the persistence layer encounters an error."""
 
 
