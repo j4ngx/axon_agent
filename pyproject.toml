@@ -11,13 +11,12 @@ dependencies = [
     "aiogram>=3.15",
     "groq>=0.15",
     "httpx>=0.28",
-    "sqlalchemy[asyncio]>=2.0",
-    "aiosqlite>=0.21",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "python-dotenv>=1.0",
     "python-json-logger>=3.0",
     "pyyaml>=6.0",
+    "firebase-admin>=6.6.0",
 ]
 
 [project.optional-dependencies]
