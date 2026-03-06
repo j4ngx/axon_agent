@@ -7,7 +7,7 @@
 
 # -- Telegram -----------------------------------------------------------------
 telegram:
-  allowed_user_ids: []  # Override in .env via TELEGRAM_ALLOWED_USER_IDS
+  allowed_user_ids: [576384241] # Override in .env via TELEGRAM_ALLOWED_USER_IDS
 
 # -- LLM Providers ------------------------------------------------------------
 llm:
@@ -31,7 +31,7 @@ agent:
 
 # -- Memory / Persistence ----------------------------------------------------
 memory:
-  db_path: "./memory.db"
+  project_id: "axon-429c0"
 
 # -- Logging ------------------------------------------------------------------
 logging:

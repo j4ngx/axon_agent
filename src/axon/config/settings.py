@@ -20,6 +20,11 @@ import yaml
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Project root = src/axon/config/../../..
+_PROJECT_ROOT: Path = Path(__file__).resolve().parents[3]
+_ENV_FILE: Path = _PROJECT_ROOT / ".env"
+_DEFAULT_CONFIG_YML: Path = _PROJECT_ROOT / "config.yml"
+
 # ---------------------------------------------------------------------------
 # YAML loader
 # ---------------------------------------------------------------------------
@@ -94,17 +99,7 @@ class AgentConfig(BaseModel):
 class MemoryConfig(BaseModel):
     """Persistence configuration."""
 
-    db_path: str = "./memory.db"
-
-    @field_validator("db_path", mode="after")
-    @classmethod
-    def resolve_db_path(cls, value: str) -> str:
-        """Resolve relative paths and ensure parent directory exists."""
-        if value == ":memory:":
-            return value
-        path = Path(value).resolve()
-        path.parent.mkdir(parents=True, exist_ok=True)
-        return str(path)
+    project_id: str | None = None
 
 
 class LoggingConfig(BaseModel):
@@ -159,7 +154,7 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -189,12 +184,21 @@ class Settings(BaseSettings):
             return [int(uid.strip()) for uid in value.split(",") if uid.strip()]
         return value
 
+    @field_validator("google_application_credentials", mode="after")
+    @classmethod
+    def resolve_credentials_path(cls, v: str) -> str:
+        """Resolve relative credential paths against the project root."""
+        path = Path(v)
+        if not path.is_absolute():
+            return str(_PROJECT_ROOT / v)
+        return v
+
     # -- Factory ---------------------------------------------------------------
 
     @classmethod
     def from_yaml(
         cls,
-        yaml_path: str | Path = "config.yml",
+        yaml_path: str | Path | None = None,
         **overrides: Any,
     ) -> Settings:
         """Build a ``Settings`` by layering YAML config on top of env secrets.
@@ -206,12 +210,17 @@ class Settings(BaseSettings):
         Returns:
             A fully-validated ``Settings``.
         """
-        yaml_data = load_yaml_config(yaml_path)
+        yaml_data = load_yaml_config(yaml_path if yaml_path is not None else _DEFAULT_CONFIG_YML)
 
         init_kwargs: dict[str, Any] = {}
 
         if "telegram" in yaml_data:
-            init_kwargs["telegram"] = TelegramConfig(**yaml_data["telegram"])
+            tg_data = yaml_data["telegram"]
+            init_kwargs["telegram"] = TelegramConfig(**tg_data)
+            # Seed the flat env-alias from YAML so config.yml alone is sufficient;
+            # TELEGRAM_ALLOWED_USER_IDS in .env takes priority (overrides via env source).
+            if tg_data.get("allowed_user_ids"):
+                init_kwargs.setdefault("telegram_allowed_user_ids", tg_data["allowed_user_ids"])
         if "llm" in yaml_data:
             init_kwargs["llm"] = LLMConfig(**yaml_data["llm"])
         if "agent" in yaml_data:
