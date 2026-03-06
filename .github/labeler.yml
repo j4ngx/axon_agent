@@ -1,0 +1,29 @@
+# PR Auto-labeling configuration
+
+core:
+  - changed-files:
+      - any-glob-to-any-file: ["src/axon/agent/**", "src/axon/main.py"]
+
+tools:
+  - changed-files:
+      - any-glob-to-any-file: ["src/axon/tools/**", "src/axon/skills/**"]
+
+memory:
+  - changed-files:
+      - any-glob-to-any-file: ["src/axon/memory/**"]
+
+telegrams:
+  - changed-files:
+      - any-glob-to-any-file: ["src/axon/telegram/**"]
+
+config:
+  - changed-files:
+      - any-glob-to-any-file: ["src/axon/config/**", "*.yml", "*.toml", ".env*"]
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: ["tests/**"]
+
+devops:
+  - changed-files:
+      - any-glob-to-any-file: [".github/**", "Dockerfile", "docker-compose.yml"]
