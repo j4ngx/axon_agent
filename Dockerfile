@@ -34,9 +34,9 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates gnupg && \
     mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
-        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \
-        > /etc/apt/sources.list.d/nodesource.list && \
+    > /etc/apt/sources.list.d/nodesource.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends nodejs && \
     apt-get purge -y gnupg && \
@@ -62,7 +62,7 @@ COPY pyproject.toml ./
 COPY config.yml config.example.yml ./
 COPY prompts/ prompts/
 
-# Create data directory for SQLite persistence (volume mount target)
+# Create data directory (volume mount target)
 RUN mkdir -p /app/data && chown -R axon:axon /app
 
 # Environment

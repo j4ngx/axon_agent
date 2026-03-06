@@ -19,6 +19,9 @@ from axon.tools.base import Tool
 
 logger = logging.getLogger(__name__)
 
+# Maximum time (seconds) to wait for a gog subprocess to complete.
+_GOG_TIMEOUT = 30.0
+
 
 class GogTool(Tool):
     """Base class for GOG-related tools to share common CLI execution logic."""
@@ -32,7 +35,7 @@ class GogTool(Tool):
             cmd_args.extend(["--account", account])
         cmd_args.extend(args)
 
-        logger.debug("Executing gog command", extra={"args": cmd_args})
+        logger.debug("Executing gog command", extra={"cmd_args": cmd_args})
 
         try:
             process = await asyncio.create_subprocess_exec(
@@ -40,14 +43,27 @@ class GogTool(Tool):
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await process.communicate()
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=_GOG_TIMEOUT,
+            )
 
             if process.returncode != 0:
                 error_msg = stderr.decode().strip()
-                logger.error("Gog command failed", extra={"error": error_msg, "code": process.returncode})
+                logger.error(
+                    "Gog command failed",
+                    extra={"error": error_msg, "code": process.returncode},
+                )
                 return f"Error: {error_msg}"
 
             return stdout.decode().strip()
+        except TimeoutError:
+            process.kill()
+            logger.error(
+                "Gog command timed out",
+                extra={"timeout": _GOG_TIMEOUT, "cmd_args": cmd_args},
+            )
+            return f"Error: Command timed out after {_GOG_TIMEOUT}s"
         except Exception as e:
             logger.exception("Failed to execute gog command")
             return f"Error: Unexpected failure: {e}"
@@ -55,6 +71,8 @@ class GogTool(Tool):
 
 class GogGmailTool(GogTool):
     """Tool for Gmail operations."""
+
+    _ALLOWED_COMMANDS = frozenset({"search", "send"})
 
     @property
     def name(self) -> str:
@@ -73,20 +91,31 @@ class GogGmailTool(GogTool):
         return {
             "type": "object",
             "properties": {
-                "command": {"type": "string", "description": "Command type: 'search' or 'send'"},
-                "args": {"type": "array", "items": {"type": "string"}, "description": "Arguments for the command"},
+                "command": {
+                    "type": "string",
+                    "description": "Command type: 'search' or 'send'",
+                },
+                "args": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Arguments for the command",
+                },
             },
             "required": ["command", "args"],
         }
 
-    async def run(self, command: str, args: list[str]) -> str:
-        if command not in ["search", "send"]:
+    async def run(self, **kwargs: Any) -> str:
+        command: str = kwargs["command"]
+        args: list[str] = kwargs.get("args", [])
+        if command not in self._ALLOWED_COMMANDS:
             return f"Error: Unsupported Gmail command '{command}'"
-        return await self._run_gog(["gmail", command] + args)
+        return await self._run_gog(["gmail", command, *args])
 
 
 class GogCalendarTool(GogTool):
     """Tool for Google Calendar operations."""
+
+    _ALLOWED_COMMANDS = frozenset({"events", "create", "update", "colors"})
 
     @property
     def name(self) -> str:
@@ -105,20 +134,31 @@ class GogCalendarTool(GogTool):
         return {
             "type": "object",
             "properties": {
-                "command": {"type": "string", "description": "Command type: 'events', 'create', 'update'"},
-                "args": {"type": "array", "items": {"type": "string"}, "description": "Arguments for the command"},
+                "command": {
+                    "type": "string",
+                    "description": "Command type: 'events', 'create', 'update'",
+                },
+                "args": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Arguments for the command",
+                },
             },
             "required": ["command", "args"],
         }
 
-    async def run(self, command: str, args: list[str]) -> str:
-        if command not in ["events", "create", "update", "colors"]:
+    async def run(self, **kwargs: Any) -> str:
+        command: str = kwargs["command"]
+        args: list[str] = kwargs.get("args", [])
+        if command not in self._ALLOWED_COMMANDS:
             return f"Error: Unsupported Calendar command '{command}'"
-        return await self._run_gog(["calendar", command] + args)
+        return await self._run_gog(["calendar", command, *args])
 
 
 class GogSheetsTool(GogTool):
     """Tool for Google Sheets operations."""
+
+    _ALLOWED_COMMANDS = frozenset({"get", "append", "update", "clear", "metadata"})
 
     @property
     def name(self) -> str:
@@ -136,13 +176,22 @@ class GogSheetsTool(GogTool):
         return {
             "type": "object",
             "properties": {
-                "command": {"type": "string", "description": "Command type: 'get', 'append', 'update', 'clear'"},
-                "args": {"type": "array", "items": {"type": "string"}, "description": "Arguments for the command"},
+                "command": {
+                    "type": "string",
+                    "description": "Command type: 'get', 'append', 'update', 'clear'",
+                },
+                "args": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Arguments for the command",
+                },
             },
             "required": ["command", "args"],
         }
 
-    async def run(self, command: str, args: list[str]) -> str:
-        if command not in ["get", "append", "update", "clear", "metadata"]:
+    async def run(self, **kwargs: Any) -> str:
+        command: str = kwargs["command"]
+        args: list[str] = kwargs.get("args", [])
+        if command not in self._ALLOWED_COMMANDS:
             return f"Error: Unsupported Sheets command '{command}'"
-        return await self._run_gog(["sheets", command] + args)
+        return await self._run_gog(["sheets", command, *args])

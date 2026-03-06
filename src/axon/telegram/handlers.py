@@ -141,7 +141,9 @@ def create_router(
         )
 
         # Echo the transcription so the user can confirm.
-        await message.answer(f"🗣️ *Transcription:*\n_{transcribed_text}_", parse_mode="Markdown")
+        # Escape Markdown special chars to avoid Telegram parse errors.
+        safe_text = _escape_markdown(transcribed_text)
+        await message.answer(f"🗣️ *Transcription:*\n_{safe_text}_", parse_mode="Markdown")
 
         # 3. Run through the agent loop as if it were a text message.
         try:
@@ -187,6 +189,23 @@ def create_router(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+_MARKDOWN_SPECIAL = r"\_*[]()~`>#+-=|{}.!"
+
+
+def _escape_markdown(text: str) -> str:
+    """Escape Telegram Markdown v1 special characters.
+
+    Args:
+        text: Raw text that may contain special chars.
+
+    Returns:
+        Escaped text safe for ``parse_mode="Markdown"``.
+    """
+    for ch in ("_", "*", "`", "["):
+        text = text.replace(ch, f"\\{ch}")
+    return text
+
 
 _MAX_MESSAGE_LENGTH = 4096
 

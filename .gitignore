@@ -23,10 +23,6 @@ env/
 memory.db
 service-account.json
 credentials.json
-*.json
-!firebase.json
-!firestore.indexes.json
-!pyproject.toml
 
 # IDE
 .vscode/

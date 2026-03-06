@@ -14,11 +14,11 @@ services:
       dockerfile: Dockerfile
     container_name: axon
     restart: unless-stopped
-    environment:
-      - GOG_ACCOUNT=${GOG_ACCOUNT}
+    env_file:
+      - .env
     volumes:
       - axon-data:/app/data
-      - /Users/j4ngx/Library/Application Support/gogcli:/home/axon/.config/gogcli:ro
+      - ${GOG_CONFIG_DIR:-./gogcli-config}:/home/axon/.config/gogcli:ro
     stop_grace_period: 10s
 
 volumes:
