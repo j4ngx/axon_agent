@@ -16,12 +16,15 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from google.cloud.firestore import AsyncClient
+
 from axon.agent.loop import AgentLoop
 from axon.config.settings import Settings
 from axon.llm.fallback import FallbackLLMClient
 from axon.llm.groq_client import GroqLLMClient
 from axon.llm.openrouter_client import OpenRouterLLMClient
-from axon.memory.db import create_engine, create_session_factory, init_db
+from axon.llm.transcription import TranscriptionClient
+from axon.memory.db import init_firebase
 from axon.memory.repositories import ChatHistoryRepository
 from axon.skills.loader import load_skills
 from axon.telegram.bot import create_bot, create_dispatcher
@@ -30,7 +33,6 @@ from axon.tools.registry import ToolRegistry
 
 if TYPE_CHECKING:
     from aiogram import Bot, Dispatcher
-    from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +52,10 @@ class Container:
         self._settings = settings
 
         # Lazy — populated by ``init()``.
-        self._engine: AsyncEngine | None = None
-        self._session_factory: async_sessionmaker | None = None
+        self._firestore_client: AsyncClient | None = None
         self._memory: ChatHistoryRepository | None = None
         self._llm: FallbackLLMClient | None = None
+        self._transcription: TranscriptionClient | None = None
         self._tools: ToolRegistry | None = None
         self._agent: AgentLoop | None = None
         self._bot: Bot | None = None
@@ -71,10 +73,11 @@ class Container:
         logger.info("Initialising DI container")
 
         # 1. Persistence
-        self._engine = create_engine(self._settings.memory.db_path)
-        await init_db(self._engine)
-        self._session_factory = create_session_factory(self._engine)
-        self._memory = ChatHistoryRepository(self._session_factory)
+        self._firestore_client = init_firebase(
+            project_id=self._settings.memory.project_id,
+            cred_path=self._settings.google_application_credentials,
+        )
+        self._memory = ChatHistoryRepository(self._firestore_client)
 
         # 2. LLM clients
         groq = GroqLLMClient(
@@ -106,9 +109,14 @@ class Container:
 
         # 5. Telegram
         self._bot = create_bot(token=self._settings.telegram_bot_token)
+        self._transcription = TranscriptionClient(
+            api_key=self._settings.groq_api_key,
+        )
         router = create_router(
             agent_loop=self._agent,
             allowed_user_ids=self._settings.telegram_allowed_user_ids,
+            transcription_client=self._transcription,
+            bot=self._bot,
         )
         self._dispatcher = create_dispatcher(router)
 
@@ -119,8 +127,10 @@ class Container:
         logger.info("Shutting down DI container")
         if self._tools:
             await self._tools.shutdown()
-        if self._engine:
-            await self._engine.dispose()
+        if self._transcription:
+            await self._transcription.close()
+        if self._firestore_client:
+            self._firestore_client.close()
         if self._bot:
             await self._bot.session.close()
         logger.info("DI container shut down")
