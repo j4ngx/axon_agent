@@ -1,0 +1,25 @@
+# =============================================================================
+# Axon — Docker Compose
+# =============================================================================
+# Usage:
+#   docker compose up -d --build    # Build and start
+#   docker compose logs -f axon     # Tail logs
+#   docker compose down             # Stop
+# =============================================================================
+
+services:
+  axon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: axon
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - axon-data:/app/data
+    stop_grace_period: 10s
+
+volumes:
+  axon-data:
+    driver: local
