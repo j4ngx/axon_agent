@@ -1,0 +1,56 @@
+# =============================================================================
+# Axon — Application Configuration
+# =============================================================================
+# Non-secret settings live here.  Secrets (API keys, tokens) stay in .env.
+# This file is version-controlled and safe to share.
+# =============================================================================
+
+# -- Telegram -----------------------------------------------------------------
+telegram:
+  allowed_user_ids: []  # Override in .env via TELEGRAM_ALLOWED_USER_IDS
+
+# -- LLM Providers ------------------------------------------------------------
+llm:
+  groq:
+    model: "llama-3.3-70b-versatile"
+    timeout: 30.0
+
+  openrouter:
+    model: "meta-llama/llama-3.3-70b-instruct:free"
+    timeout: 60.0
+    base_url: "https://openrouter.ai/api/v1"
+
+  primary: "groq"
+  fallback: "openrouter"
+
+# -- Agent --------------------------------------------------------------------
+agent:
+  max_iterations: 5
+  history_limit: 20
+  system_prompt_path: "prompts/system_prompt.md"
+
+# -- Memory / Persistence ----------------------------------------------------
+memory:
+  db_path: "./memory.db"
+
+# -- Logging ------------------------------------------------------------------
+logging:
+  level: "INFO"
+
+# -- Skills -------------------------------------------------------------------
+# Skills are pluggable capabilities loaded at startup.
+# Each entry has a `type` (builtin | mcp) and type-specific config.
+skills:
+  - name: "get_current_time"
+    type: "builtin"
+    enabled: true
+
+  # Example MCP tool (uncomment and install `mcp` extra to enable):
+  # - name: "web_search"
+  #   type: "mcp"
+  #   enabled: true
+  #   transport: "stdio"
+  #   command: "npx"
+  #   args: ["-y", "@anthropic/mcp-server-web-search"]
+  #   env:
+  #     BRAVE_API_KEY: "${BRAVE_API_KEY}"
