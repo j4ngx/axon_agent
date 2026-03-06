@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
@@ -149,9 +148,7 @@ class TestOpenRouterGenerate:
     async def test_when_request_error_expect_llm_error(self) -> None:
         client = OpenRouterLLMClient(api_key="fake-key")
         client._client = AsyncMock()
-        client._client.post = AsyncMock(
-            side_effect=httpx.RequestError("connection refused")
-        )
+        client._client.post = AsyncMock(side_effect=httpx.RequestError("connection refused"))
 
         with pytest.raises(LLMError, match="OpenRouter request error"):
             await client.generate([{"role": "user", "content": "hi"}])
