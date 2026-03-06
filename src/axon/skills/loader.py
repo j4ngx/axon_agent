@@ -25,9 +25,12 @@ def _discover_builtins() -> None:
         return
 
     from axon.tools.get_current_time import GetCurrentTimeTool
+    from axon.tools.gog import GogGmailTool, GogCalendarTool, GogSheetsTool
+
 
     # Add new builtins here:
-    for cls in [GetCurrentTimeTool]:
+    for cls in [GetCurrentTimeTool, GogGmailTool, GogCalendarTool, GogSheetsTool]:
+
         instance = cls()
         _BUILTIN_SKILLS[instance.name] = cls
 

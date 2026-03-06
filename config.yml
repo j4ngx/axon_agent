@@ -45,6 +45,10 @@ skills:
     type: "builtin"
     enabled: true
 
+  - name: "gog"
+    type: "builtin"
+    enabled: true
+
   # Example MCP tool (uncomment and install `mcp` extra to enable):
   # - name: "web_search"
   #   type: "mcp"

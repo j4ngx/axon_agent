@@ -43,6 +43,10 @@ RUN apt-get update && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
+# Install gogcli
+RUN curl -L https://github.com/steipete/gogcli/releases/latest/download/gog_linux_amd64 -o /usr/local/bin/gog && \
+    chmod +x /usr/local/bin/gog
+
 # Create non-root user
 RUN groupadd --gid 1000 axon && \
     useradd --uid 1000 --gid axon --create-home axon
