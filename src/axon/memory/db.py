@@ -1,60 +1,58 @@
-"""Database engine and session factory helpers.
+"""Firebase Firestore database initialisation.
 
-This module owns the async engine and session lifecycle.  The rest of Axon
-never touches SQLAlchemy engine details directly — they go through
-``repositories.py``.
+This module owns the Firebase App lifecycle and provides the
+Firestore async client. The rest of Axon accesses the database
+through ``repositories.py``.
 """
 
-from __future__ import annotations
-
 import logging
+import os
 
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    async_sessionmaker,
-    create_async_engine,
-)
-
-from axon.memory.models import Base
+import firebase_admin
+from firebase_admin import credentials, firestore_async
+from google.cloud.firestore import AsyncClient
 
 logger = logging.getLogger(__name__)
 
 
-def create_engine(db_path: str) -> AsyncEngine:
-    """Create an async SQLAlchemy engine for the given SQLite path.
+def init_firebase(
+    project_id: str | None = None,
+    cred_path: str | None = None,
+) -> AsyncClient:
+    """Initialise Firebase and return an async Firestore client.
+
+    Credential resolution order:
+    1. ``cred_path`` argument (absolute path preferred)
+    2. ``GOOGLE_APPLICATION_CREDENTIALS`` environment variable
+    3. Application Default Credentials (ADC)
+
+    If the app is already initialised, it re-uses the existing app.
 
     Args:
-        db_path: Absolute or relative filesystem path to the SQLite database.
+        project_id: GCP project ID to bind the Firestore client to.
+        cred_path: Absolute path to a service-account JSON file.
 
     Returns:
-        A configured ``AsyncEngine`` instance.
+        An ``AsyncClient`` bound to the Firebase app.
     """
-    url = f"sqlite+aiosqlite:///{db_path}"
-    logger.info("Creating async database engine", extra={"url": url})
-    return create_async_engine(url, echo=False)
+    if not firebase_admin._apps:
+        logger.info("Initialising Firebase Admin app")
+        options: dict[str, str] = {}
+        if project_id:
+            options["projectId"] = project_id
 
+        # Prefer the explicitly supplied path; fall back to env var.
+        resolved_cred = cred_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        if resolved_cred and os.path.exists(resolved_cred):
+            logger.info("Using service-account credentials: %s", resolved_cred)
+            cred = credentials.Certificate(resolved_cred)
+            firebase_admin.initialize_app(cred, options=options or None)
+        else:
+            if resolved_cred:
+                logger.warning(
+                    "Credential file not found at '%s'; falling back to ADC",
+                    resolved_cred,
+                )
+            firebase_admin.initialize_app(options=options or None)
 
-def create_session_factory(engine: AsyncEngine) -> async_sessionmaker:
-    """Return a session factory bound to *engine*.
-
-    Args:
-        engine: The async engine to bind to.
-
-    Returns:
-        An ``async_sessionmaker`` that produces ``AsyncSession`` instances.
-    """
-    return async_sessionmaker(engine, expire_on_commit=False)
-
-
-async def init_db(engine: AsyncEngine) -> None:
-    """Create all tables that do not yet exist.
-
-    This is safe to call on every startup — SQLAlchemy's
-    ``create_all`` is a no-op for tables that are already present.
-
-    Args:
-        engine: The async engine whose database should be initialised.
-    """
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database schema initialised")
+    return firestore_async.client()

@@ -1,44 +1,46 @@
-"""SQLAlchemy declarative models for Axon's persistent memory."""
+"""Data models for Axon's persistent memory."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
-
-from sqlalchemy import BigInteger, DateTime, Index, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from typing import Any
 
 
-class Base(DeclarativeBase):
-    """Shared declarative base for all Axon models."""
-
-
-class Message(Base):
+@dataclass
+class Message:
     """A single message in a conversation.
 
     Attributes:
-        id: Auto-incrementing primary key.
+        id: Firestore document ID (optional before saving).
         user_id: Telegram user ID that owns the conversation.
         role: Message role — ``user``, ``assistant``, ``system``, or ``tool``.
         content: The message text.
         timestamp: UTC timestamp of the message.
     """
 
-    __tablename__ = "messages"
+    user_id: int
+    role: str
+    content: str
+    id: str | None = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    role: Mapped[str] = mapped_column(Text, nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(UTC),
-    )
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a dictionary for Firestore."""
+        return {
+            "user_id": self.user_id,
+            "role": self.role,
+            "content": self.content,
+            "timestamp": self.timestamp,
+        }
 
-    __table_args__ = (Index("ix_messages_user_id_timestamp", "user_id", "timestamp"),)
-
-    def __repr__(self) -> str:
-        return (
-            f"Message(id={self.id!r}, user_id={self.user_id!r}, "
-            f"role={self.role!r}, timestamp={self.timestamp!r})"
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], doc_id: str) -> Message:
+        """Create a Message from a Firestore document data."""
+        return cls(
+            id=doc_id,
+            user_id=data.get("user_id", 0),
+            role=data.get("role", ""),
+            content=data.get("content", ""),
+            timestamp=data.get("timestamp", datetime.now(UTC)),
         )

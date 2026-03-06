@@ -1,7 +1,14 @@
 """Repository layer for conversation memory.
 
-All SQL access is encapsulated here.  The agent, tools, and Telegram handlers
-never import SQLAlchemy or write raw SQL — they call the repository methods.
+All database access is encapsulated here.  The agent, tools, and Telegram handlers
+never write raw queries — they call the repository methods.
+
+Firestore data model
+--------------------
+``users/{user_id}/messages/{message_id}``
+
+Using per-user sub-collections means queries only need ``ORDER BY timestamp`` on a
+single collection, which requires no composite index.
 """
 
 from __future__ import annotations
@@ -9,8 +16,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from google.cloud.firestore import AsyncClient, Query
 
 from axon.memory.models import Message
 
@@ -18,14 +24,26 @@ logger = logging.getLogger(__name__)
 
 
 class ChatHistoryRepository:
-    """Read/write access to conversation history stored in SQLite.
+    """Read/write access to conversation history stored in Firestore.
 
     Args:
-        session_factory: An ``async_sessionmaker`` that produces async sessions.
+        client: An async Firestore client.
     """
 
-    def __init__(self, session_factory: async_sessionmaker) -> None:
-        self._session_factory = session_factory
+    def __init__(self, client: AsyncClient) -> None:
+        self._client = client
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _messages_ref(self, user_id: int):  # type: ignore[return]
+        """Return the ``messages`` sub-collection for *user_id*."""
+        return self._client.collection("users").document(str(user_id)).collection("messages")
+
+    # ------------------------------------------------------------------
+    # Write
+    # ------------------------------------------------------------------
 
     async def save_message(
         self,
@@ -51,12 +69,17 @@ class ChatHistoryRepository:
             content=content,
             timestamp=timestamp or datetime.now(UTC),
         )
-        async with self._session_factory() as session:
-            session.add(msg)
-            await session.commit()
-            await session.refresh(msg)
-        logger.debug("Saved message", extra={"user_id": user_id, "role": role})
+
+        doc_ref = self._messages_ref(user_id).document()
+        await doc_ref.set(msg.to_dict())
+        msg.id = doc_ref.id
+
+        logger.debug("Saved message", extra={"user_id": user_id, "role": role, "id": msg.id})
         return msg
+
+    # ------------------------------------------------------------------
+    # Read
+    # ------------------------------------------------------------------
 
     async def get_recent_history(
         self,
@@ -65,6 +88,10 @@ class ChatHistoryRepository:
     ) -> list[Message]:
         """Fetch the most recent messages for a user, ordered oldest-first.
 
+        Queries the ``users/{user_id}/messages`` sub-collection — no composite
+        index is needed because the filter on ``user_id`` is implicit in the
+        collection path.
+
         Args:
             user_id: Telegram user ID whose history to retrieve.
             limit: Maximum number of messages to return.
@@ -72,15 +99,14 @@ class ChatHistoryRepository:
         Returns:
             A list of ``Message`` instances ordered by ascending timestamp.
         """
-        stmt = (
-            select(Message)
-            .where(Message.user_id == user_id)
-            .order_by(Message.timestamp.desc())
+        query = (
+            self._messages_ref(user_id)
+            .order_by("timestamp", direction=Query.DESCENDING)
             .limit(limit)
         )
-        async with self._session_factory() as session:
-            result = await session.execute(stmt)
-            messages = list(result.scalars().all())
+
+        docs = await query.get()
+        messages = [Message.from_dict(doc.to_dict() or {}, doc.id) for doc in docs]
 
         # Return oldest-first so the LLM sees chronological order.
         messages.reverse()
