@@ -109,7 +109,8 @@ async def _load_mcp(registry: ToolRegistry, skill: SkillConfig) -> None:
     )
 
     try:
-        read_stream, write_stream = await stdio_client(server_params).__aenter__()
+        transport_cm = stdio_client(server_params)
+        read_stream, write_stream = await transport_cm.__aenter__()
         session = ClientSession(read_stream, write_stream)
         await session.__aenter__()
         await session.initialize()
@@ -123,8 +124,9 @@ async def _load_mcp(registry: ToolRegistry, skill: SkillConfig) -> None:
             )
             registry.register(adapter)
 
-        # Track session so it can be closed on shutdown.
+        # Track both context managers so they can be closed on shutdown.
         registry.add_mcp_session(session)
+        registry.add_mcp_session(transport_cm)
 
         logger.info(
             "Loaded MCP skill",
