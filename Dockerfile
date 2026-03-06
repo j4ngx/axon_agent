@@ -13,7 +13,7 @@ FROM ghcr.io/astral-sh/uv:0.6-python3.11-bookworm-slim AS builder
 WORKDIR /build
 
 # Copy dependency manifests first (layer caching)
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock* README.md* ./
 
 # Install production deps + MCP extra into /build/.venv
 RUN --mount=type=cache,target=/root/.cache/uv \
