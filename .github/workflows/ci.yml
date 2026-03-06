@@ -36,8 +36,14 @@ jobs:
 
       - name: Secret Scanning
         run: |
+          # Use --baseline to ignore known secrets. If new ones are found, they'll appear in the output.
+          # We check if the 'results' object in the output is non-empty.
           uv run detect-secrets scan --baseline .secrets.baseline > .secrets.new
-          diff .secrets.baseline .secrets.new || (echo "New secrets detected!" && exit 1)
+          if [ "$(jq '.results | length' .secrets.new)" -gt 0 ]; then
+            echo "New secrets detected!"
+            jq '.results' .secrets.new
+            exit 1
+          fi
 
       - name: Run tests with coverage
         run: |
