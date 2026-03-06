@@ -47,8 +47,9 @@ htmlcov/
 .mutmut-cache/
 .secrets.baseline
 
-# Documentation (not needed at runtime)
+# Documentation (not needed at runtime, but needed for build backend)
 *.md
+!README.md
 !prompts/*.md
 LICENSE
 
