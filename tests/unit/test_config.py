@@ -80,13 +80,13 @@ class TestAgentConfig:
 class TestMemoryConfig:
     """Tests for ``MemoryConfig``."""
 
-    def test_when_memory_path_expect_resolved_absolute(self) -> None:
-        cfg = MemoryConfig(db_path="./test.db")
-        assert Path(cfg.db_path).is_absolute()
+    def test_when_default_expect_none(self) -> None:
+        cfg = MemoryConfig()
+        assert cfg.project_id is None
 
-    def test_when_in_memory_path_expect_unchanged(self) -> None:
-        cfg = MemoryConfig(db_path=":memory:")
-        assert cfg.db_path == ":memory:"
+    def test_when_project_id_provided_expect_set(self) -> None:
+        cfg = MemoryConfig(project_id="axon-test")
+        assert cfg.project_id == "axon-test"
 
 
 class TestSkillConfig:

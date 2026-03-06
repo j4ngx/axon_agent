@@ -27,7 +27,7 @@ def container_settings(tmp_path) -> Settings:
         openrouter_api_key="sk-or-v1-test_fake_key",
         llm=LLMConfig(),
         agent=AgentConfig(max_iterations=2, history_limit=5, system_prompt_path=str(prompt_file)),
-        memory=MemoryConfig(db_path=":memory:"),
+        memory=MemoryConfig(project_id="test-project"),
         logging=LoggingConfig(level="DEBUG"),
         skills=[SkillConfig(name="get_current_time", type="builtin", enabled=True)],
     )
@@ -37,8 +37,9 @@ class TestContainer:
     """Unit tests for the DI ``Container``."""
 
     async def test_when_init_expect_all_services_available(
-        self, container_settings: Settings
+        self, container_settings: Settings, mocker: pytest.FixtureRequest
     ) -> None:
+        mocker.patch("axon.di.container.init_firebase")
         container = Container(container_settings)
         await container.init()
 
@@ -53,7 +54,10 @@ class TestContainer:
         finally:
             await container.shutdown()
 
-    async def test_when_shutdown_expect_engine_disposed(self, container_settings: Settings) -> None:
+    async def test_when_shutdown_expect_engine_disposed(
+        self, container_settings: Settings, mocker: pytest.FixtureRequest
+    ) -> None:
+        mocker.patch("axon.di.container.init_firebase")
         container = Container(container_settings)
         await container.init()
         await container.shutdown()
@@ -69,8 +73,9 @@ class TestContainer:
             _ = container.memory
 
     async def test_when_skills_configured_expect_tools_registered(
-        self, container_settings: Settings
+        self, container_settings: Settings, mocker: pytest.FixtureRequest
     ) -> None:
+        mocker.patch("axon.di.container.init_firebase")
         container = Container(container_settings)
         await container.init()
 

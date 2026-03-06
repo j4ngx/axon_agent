@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from axon.config.settings import (
     AgentConfig,
@@ -13,7 +14,7 @@ from axon.config.settings import (
     Settings,
     SkillConfig,
 )
-from axon.memory.db import init_db
+from axon.memory.models import Message
 from axon.memory.repositories import ChatHistoryRepository
 from axon.tools.get_current_time import GetCurrentTimeTool
 from axon.tools.registry import ToolRegistry
@@ -39,31 +40,58 @@ def settings(tmp_path) -> Settings:
             history_limit=10,
             system_prompt_path=str(prompt),
         ),
-        memory=MemoryConfig(db_path=":memory:"),
+        memory=MemoryConfig(project_id="test-project"),
         logging=LoggingConfig(level="DEBUG"),
         skills=[SkillConfig(name="get_current_time", type="builtin")],
     )
 
 
 @pytest.fixture
-async def db_engine():
-    """In-memory async SQLAlchemy engine (fresh per test)."""
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-    await init_db(engine)
-    yield engine
-    await engine.dispose()
+def mock_firestore_client():
+    """Returns a mock AsyncClient."""
+    mock_client = MagicMock()
+    mock_collection = MagicMock()
+    mock_document = MagicMock()
+    mock_document.set = AsyncMock()
+    mock_collection.document.return_value = mock_document
+
+    mock_query = MagicMock()
+    mock_query.get = AsyncMock(return_value=[])
+    mock_collection.where.return_value.order_by.return_value.limit.return_value = mock_query
+
+    mock_client.collection.return_value = mock_collection
+    return mock_client
 
 
 @pytest.fixture
-async def session_factory(db_engine):
-    """Session factory bound to the in-memory test engine."""
-    return async_sessionmaker(db_engine, expire_on_commit=False)
+def repository(mock_firestore_client) -> ChatHistoryRepository:
+    """A mock ChatHistoryRepository for most tests.
+    test_repositories.py which can test real repository logic.
+    """
+    repo = AsyncMock(spec=ChatHistoryRepository)
+    repo.get_recent_history.return_value = []
 
+    async def mock_save_message(**kwargs):
+        return Message(
+            id="mock-id",
+            user_id=kwargs.get("user_id", 0),
+            role=kwargs.get("role", ""),
+            content=kwargs.get("content", ""),
+        )
 
-@pytest.fixture
-async def repository(session_factory) -> ChatHistoryRepository:
-    """A ``ChatHistoryRepository`` backed by an in-memory database."""
-    return ChatHistoryRepository(session_factory)
+    repo.save_message.side_effect = mock_save_message
+
+    # Also store an internal history list if tests want to check it
+    repo.history = []
+
+    async def mock_save_and_store(**kwargs):
+        msg = await mock_save_message(**kwargs)
+        repo.history.append(msg)
+        repo.get_recent_history.return_value = repo.history
+        return msg
+
+    repo.save_message.side_effect = mock_save_and_store
+    return repo
 
 
 @pytest.fixture
