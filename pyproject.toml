@@ -1,0 +1,104 @@
+[project]
+name = "axon"
+version = "0.1.0"
+description = "Axon — A personal, local-first AI agent with Telegram interface, LLM reasoning, tool execution, and persistent memory."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "j4ngx" }]
+
+dependencies = [
+    "aiogram>=3.15",
+    "groq>=0.15",
+    "httpx>=0.28",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.21",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
+    "python-json-logger>=3.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0"]
+
+[project.scripts]
+axon = "axon.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/axon"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-mock>=3.14",
+    "pytest-cov>=6.0",
+    "polyfactory>=2.0",
+    "freezegun>=1.4",
+    "mutmut>=3.0",
+    "ruff>=0.9",
+    "detect-secrets>=1.5",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff – formatter & linter
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "N",   # pep8-naming
+    "S",   # flake8-bandit (security)
+    "T20", # flake8-print
+    "RUF", # Ruff-specific rules
+]
+ignore = [
+    "S101",  # allow assert in tests
+    "S104",  # allow binding to 0.0.0.0
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S106"]  # allow hardcoded fake tokens in test fixtures
+
+[tool.ruff.lint.isort]
+known-first-party = ["axon"]
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short"
+
+# ---------------------------------------------------------------------------
+# Coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["src/axon"]
+omit = ["*/tests/*", "*/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "def __repr__",
+    "raise NotImplementedError",
+]

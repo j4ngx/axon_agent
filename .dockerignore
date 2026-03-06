@@ -1,0 +1,58 @@
+# =============================================================================
+# .dockerignore — Keep the Docker build context small and secure
+# =============================================================================
+
+# Version control
+.git/
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Secrets — NEVER bake into image layers
+.env
+.env.*
+!.env.example
+
+# Runtime data
+*.db
+data/
+memory.db
+
+# Test / Dev
+tests/
+htmlcov/
+.coverage
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.mutmut-cache/
+.secrets.baseline
+
+# Documentation (not needed at runtime)
+*.md
+!prompts/*.md
+LICENSE
+
+# Docker files (no recursive builds)
+Dockerfile
+docker-compose.yml
+docker-compose*.yml

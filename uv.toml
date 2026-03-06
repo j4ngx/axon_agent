@@ -1,0 +1,8 @@
+# =============================================================================
+# uv.toml — Repo-level uv configuration
+# Forces public PyPI so CI runners (without corporate VPN) can resolve deps.
+# Overrides any user-level pip.conf index-url.
+# =============================================================================
+
+[pip]
+index-url = "https://pypi.org/simple"
