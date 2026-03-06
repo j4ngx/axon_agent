@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 
 class AgentContext(BaseModel):
-    """Immutable snapshot of the agent's working state.
+    """Mutable state container for a single agent invocation.
 
     Attributes:
         user_id: Telegram user ID whose message is being processed.

@@ -55,6 +55,7 @@ class Container:
         self._firestore_client: AsyncClient | None = None
         self._memory: ChatHistoryRepository | None = None
         self._llm: FallbackLLMClient | None = None
+        self._openrouter: OpenRouterLLMClient | None = None
         self._transcription: TranscriptionClient | None = None
         self._tools: ToolRegistry | None = None
         self._agent: AgentLoop | None = None
@@ -90,6 +91,7 @@ class Container:
             model=self._settings.llm.openrouter.model,
             timeout=self._settings.llm.openrouter.timeout,
         )
+        self._openrouter = openrouter
         self._llm = FallbackLLMClient(primary=groq, fallback=openrouter)
 
         # 3. Tools — builtin + skills (MCP, etc.)
@@ -129,6 +131,8 @@ class Container:
             await self._tools.shutdown()
         if self._transcription:
             await self._transcription.close()
+        if self._openrouter:
+            await self._openrouter.close()
         if self._firestore_client:
             self._firestore_client.close()
         if self._bot:

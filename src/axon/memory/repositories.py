@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
+from typing import Any
 
 from google.cloud.firestore import AsyncClient, Query
 
@@ -37,7 +38,7 @@ class ChatHistoryRepository:
     # Helpers
     # ------------------------------------------------------------------
 
-    def _messages_ref(self, user_id: int):  # type: ignore[return]
+    def _messages_ref(self, user_id: int) -> Any:
         """Return the ``messages`` sub-collection for *user_id*."""
         return self._client.collection("users").document(str(user_id)).collection("messages")
 
