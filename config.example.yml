@@ -1,5 +1,5 @@
 # =============================================================================
-# Axon — Application Configuration
+# Helix — Application Configuration
 # =============================================================================
 # Non-secret settings live here.  Secrets (API keys, tokens) stay in .env.
 # This file is version-controlled and safe to share.

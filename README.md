@@ -1,4 +1,4 @@
-# Axon
+# Helix
 
 A personal, local-first AI agent with Telegram interface, LLM reasoning, tool execution, and persistent memory.
 
@@ -21,7 +21,7 @@ A personal, local-first AI agent with Telegram interface, LLM reasoning, tool ex
 
 ```bash
 # Clone and enter
-git clone <repo-url> axon && cd axon
+git clone <repo-url> helix_agent && cd helix_agent
 
 # Install dependencies
 uv sync
@@ -33,7 +33,7 @@ cp config.example.yml config.yml
 # Edit config.yml to customise models, agent behaviour, skills
 
 # Run
-uv run axon
+uv run helix
 ```
 
 ## Configuration
@@ -63,18 +63,18 @@ See [config.example.yml](config.example.yml) for the full reference.
 ### System Prompt
 
 The agent's system prompt is a standalone Markdown file at `prompts/system_prompt.md`.
-Edit it to change Axon's personality, response style, or safety guidelines.
+Edit it to change Helix's personality, response style, or safety guidelines.
 Placeholders `{current_time}` and `{tools_description}` are injected at runtime.
 
 ## Project Structure
 
 ```
-axon/
+helix_agent/
 ├── config.yml                 # Application settings (non-secret)
 ├── .env                       # Secrets (API keys, tokens)
 ├── prompts/
 │   └── system_prompt.md       # Agent system prompt (Markdown)
-├── src/axon/
+├── src/helix/
 │   ├── main.py                # Entry point
 │   ├── config/
 │   │   └── settings.py        # Pydantic settings (YAML + .env merge)
@@ -114,8 +114,8 @@ axon/
 
 ### Built-in Tool
 
-1. Create a class in `src/axon/tools/` that extends `Tool` ABC
-2. Register it in `src/axon/skills/loader.py` → `_discover_builtins()`
+1. Create a class in `src/helix/tools/` that extends `Tool` ABC
+2. Register it in `src/helix/skills/loader.py` → `_discover_builtins()`
 3. Add an entry to `config.yml` under `skills`
 
 ### MCP Server
@@ -145,7 +145,7 @@ uv sync --all-extras
 uv run pytest
 
 # Run tests with coverage
-uv run pytest --cov=src/axon --cov-report=html
+uv run pytest --cov=src/helix --cov-report=html
 
 # Format
 uv run ruff format
@@ -154,7 +154,7 @@ uv run ruff format
 uv run ruff check --fix
 
 # Run the bot
-uv run axon
+uv run helix
 ```
 
 ## Architecture

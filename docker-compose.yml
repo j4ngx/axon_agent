@@ -1,26 +1,26 @@
 # =============================================================================
-# Axon — Docker Compose
+# Helix — Docker Compose
 # =============================================================================
 # Usage:
 #   docker compose up -d --build    # Build and start
-#   docker compose logs -f axon     # Tail logs
+#   docker compose logs -f helix     # Tail logs
 #   docker compose down             # Stop
 # =============================================================================
 
 services:
-  axon:
+  helix:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: axon
+    container_name: helix
     restart: unless-stopped
     env_file:
       - .env
     volumes:
-      - axon-data:/app/data
-      - ${GOG_CONFIG_DIR:-./gogcli-config}:/home/axon/.config/gogcli:ro
+      - helix-data:/app/data
+      - ${GOG_CONFIG_DIR:-./gogcli-config}:/home/helix/.config/gogcli:ro
     stop_grace_period: 10s
 
 volumes:
-  axon-data:
+  helix-data:
     driver: local

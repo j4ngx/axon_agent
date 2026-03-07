@@ -1,5 +1,5 @@
 # =============================================================================
-# Axon — Multi-stage Dockerfile
+# Helix — Multi-stage Dockerfile
 # =============================================================================
 # Stage 1 (builder): Install deps with uv into a virtual-env.
 # Stage 2 (runtime): Slim image with Python 3.11 + Node.js 20 (for MCP).
@@ -48,8 +48,8 @@ RUN curl -L https://github.com/steipete/gogcli/releases/latest/download/gog_linu
     chmod +x /usr/local/bin/gog
 
 # Create non-root user
-RUN groupadd --gid 1000 axon && \
-    useradd --uid 1000 --gid axon --create-home axon
+RUN groupadd --gid 1000 helix && \
+    useradd --uid 1000 --gid helix --create-home helix
 
 WORKDIR /app
 
@@ -63,20 +63,20 @@ COPY config.yml config.example.yml ./
 COPY prompts/ prompts/
 
 # Create data directory (volume mount target)
-RUN mkdir -p /app/data && chown -R axon:axon /app
+RUN mkdir -p /app/data && chown -R helix:helix /app
 
 # Environment
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-USER axon
+USER helix
 
 # Healthcheck — verify Python can import the package
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import axon" || exit 1
+    CMD python -c "import helix" || exit 1
 
 # Graceful shutdown: aiogram handles SIGTERM via handle_signals=True
 STOPSIGNAL SIGTERM
 
-ENTRYPOINT ["python", "-m", "axon"]
+ENTRYPOINT ["python", "-m", "helix"]
