@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-from axon.skills.mcp_adapter import MCPToolAdapter
+from helix.skills.mcp_adapter import MCPToolAdapter
 
 
 class TestMCPToolAdapter:

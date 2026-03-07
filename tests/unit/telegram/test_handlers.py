@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from aiogram import types
 
-from axon.telegram.handlers import (
+from helix.telegram.handlers import (
     AuthMiddleware,
     _escape_markdown,
     _split_message,

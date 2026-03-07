@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from freezegun import freeze_time
 
-from axon.tools.get_current_time import GetCurrentTimeTool
+from helix.tools.get_current_time import GetCurrentTimeTool
 
 
 class TestGetCurrentTimeTool:

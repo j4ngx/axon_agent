@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from axon.exceptions import LLMError
-from axon.llm.openrouter_client import OpenRouterLLMClient
+from helix.exceptions import LLMError
+from helix.llm.openrouter_client import OpenRouterLLMClient
 
 
 class TestOpenRouterParseResponse:

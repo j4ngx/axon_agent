@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from axon.tools.base import Tool
-from axon.tools.registry import ToolRegistry
+from helix.tools.base import Tool
+from helix.tools.registry import ToolRegistry
 
 
 class _DummyTool(Tool):

@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 
-from axon.exceptions import LLMError
-from axon.llm.transcription import TranscriptionClient
+from helix.exceptions import LLMError
+from helix.llm.transcription import TranscriptionClient
 
 
 class TestTranscriptionClient:

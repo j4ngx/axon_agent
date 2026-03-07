@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
-from axon.memory.repositories import ChatHistoryRepository
+from helix.memory.repositories import ChatHistoryRepository
 
 
 class TestChatHistoryRepository:

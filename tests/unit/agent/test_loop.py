@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import AsyncMock
 
-from axon.agent.loop import _FALLBACK_RESPONSE, AgentLoop
-from axon.config.settings import Settings
-from axon.exceptions import LLMError
-from axon.llm.base import LLMResponse, ToolCallRequest
-from axon.memory.repositories import ChatHistoryRepository
-from axon.tools.base import Tool
-from axon.tools.registry import ToolRegistry
+from helix.agent.loop import _FALLBACK_RESPONSE, AgentLoop
+from helix.config.settings import Settings
+from helix.exceptions import LLMError
+from helix.llm.base import LLMResponse, ToolCallRequest
+from helix.memory.repositories import ChatHistoryRepository
+from helix.tools.base import Tool
+from helix.tools.registry import ToolRegistry
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 

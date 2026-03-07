@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from axon.exceptions import LLMError
-from axon.llm.base import LLMResponse
-from axon.llm.fallback import FallbackLLMClient
+from helix.exceptions import LLMError
+from helix.llm.base import LLMResponse
+from helix.llm.fallback import FallbackLLMClient
 
 
 class TestFallbackLLMClient:

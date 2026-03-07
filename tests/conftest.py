@@ -1,4 +1,4 @@
-"""Shared test fixtures for the Axon test suite."""
+"""Shared test fixtures for the Helix test suite."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from axon.config.settings import (
+from helix.config.settings import (
     AgentConfig,
     LLMConfig,
     LoggingConfig,
@@ -14,10 +14,10 @@ from axon.config.settings import (
     Settings,
     SkillConfig,
 )
-from axon.memory.models import Message
-from axon.memory.repositories import ChatHistoryRepository
-from axon.tools.get_current_time import GetCurrentTimeTool
-from axon.tools.registry import ToolRegistry
+from helix.memory.models import Message
+from helix.memory.repositories import ChatHistoryRepository
+from helix.tools.get_current_time import GetCurrentTimeTool
+from helix.tools.registry import ToolRegistry
 
 
 @pytest.fixture

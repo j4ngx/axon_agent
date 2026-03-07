@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from axon.config.settings import (
+from helix.config.settings import (
     AgentConfig,
     GroqConfig,
     LLMConfig,
@@ -73,7 +73,7 @@ class TestAgentConfig:
     def test_when_prompt_file_missing_expect_fallback(self) -> None:
         cfg = AgentConfig(system_prompt_path="/nonexistent/prompt.md")
         result = cfg.load_system_prompt()
-        assert "Axon" in result
+        assert "Helix" in result
         assert len(result) > 10
 
 

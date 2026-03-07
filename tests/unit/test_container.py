@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from axon.config.settings import (
+from helix.config.settings import (
     AgentConfig,
     LLMConfig,
     LoggingConfig,
@@ -12,7 +12,7 @@ from axon.config.settings import (
     Settings,
     SkillConfig,
 )
-from axon.di.container import Container
+from helix.di.container import Container
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ class TestContainer:
     async def test_when_init_expect_all_services_available(
         self, container_settings: Settings, mocker: pytest.FixtureRequest
     ) -> None:
-        mocker.patch("axon.di.container.init_firebase")
+        mocker.patch("helix.di.container.init_firebase")
         container = Container(container_settings)
         await container.init()
 
@@ -57,7 +57,7 @@ class TestContainer:
     async def test_when_shutdown_expect_engine_disposed(
         self, container_settings: Settings, mocker: pytest.FixtureRequest
     ) -> None:
-        mocker.patch("axon.di.container.init_firebase")
+        mocker.patch("helix.di.container.init_firebase")
         container = Container(container_settings)
         await container.init()
         await container.shutdown()
@@ -75,7 +75,7 @@ class TestContainer:
     async def test_when_skills_configured_expect_tools_registered(
         self, container_settings: Settings, mocker: pytest.FixtureRequest
     ) -> None:
-        mocker.patch("axon.di.container.init_firebase")
+        mocker.patch("helix.di.container.init_firebase")
         container = Container(container_settings)
         await container.init()
 
