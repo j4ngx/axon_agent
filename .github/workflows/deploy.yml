@@ -7,18 +7,14 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
+  trigger-deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ${{ secrets.SSH_PATH }}
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker image prune -f
+      - name: Trigger homeserver deploy workflow
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: token ${{ secrets.HOMESERVER_DISPATCH_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/j4ngx/homeserver/dispatches \
+            -d '{"event_type":"helix-deploy","client_payload":{"sha":"${{ github.sha }}","image":"ghcr.io/j4ngx/axon_agent:main"}}'
