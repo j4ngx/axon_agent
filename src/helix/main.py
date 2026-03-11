@@ -41,6 +41,7 @@ async def async_main() -> None:
             "Helix ready — listening for Telegram messages",
             extra={"allowed_users": settings.telegram_allowed_user_ids},
         )
+        container.scheduler.start()
         await start_polling(container.bot, container.dispatcher)
     finally:
         # 5. Graceful shutdown

@@ -25,11 +25,14 @@ from helix.llm.groq_client import GroqLLMClient
 from helix.llm.openrouter_client import OpenRouterLLMClient
 from helix.llm.transcription import TranscriptionClient
 from helix.memory.db import init_firebase
+from helix.memory.reminder_repository import ReminderRepository
 from helix.memory.repositories import ChatHistoryRepository
+from helix.scheduler.service import SchedulerService
 from helix.skills.loader import load_skills
 from helix.telegram.bot import create_bot, create_dispatcher
 from helix.telegram.handlers import create_router
 from helix.tools.registry import ToolRegistry
+from helix.tools.reminder import ReminderTool
 
 if TYPE_CHECKING:
     from aiogram import Bot, Dispatcher
@@ -54,6 +57,7 @@ class Container:
         # Lazy — populated by ``init()``.
         self._firestore_client: AsyncClient | None = None
         self._memory: ChatHistoryRepository | None = None
+        self._reminder_repo: ReminderRepository | None = None
         self._llm: FallbackLLMClient | None = None
         self._openrouter: OpenRouterLLMClient | None = None
         self._transcription: TranscriptionClient | None = None
@@ -61,6 +65,7 @@ class Container:
         self._agent: AgentLoop | None = None
         self._bot: Bot | None = None
         self._dispatcher: Dispatcher | None = None
+        self._scheduler: SchedulerService | None = None
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -79,6 +84,7 @@ class Container:
             cred_path=self._settings.google_application_credentials,
         )
         self._memory = ChatHistoryRepository(self._firestore_client)
+        self._reminder_repo = ReminderRepository(self._firestore_client)
 
         # 2. LLM clients
         groq = GroqLLMClient(
@@ -101,6 +107,9 @@ class Container:
             skill_configs=self._settings.skills,
         )
 
+        # 3b. Reminder tool (needs DI — registered after load_skills)
+        self._tools.register(ReminderTool(repository=self._reminder_repo))
+
         # 4. Agent
         self._agent = AgentLoop(
             llm=self._llm,
@@ -122,11 +131,19 @@ class Container:
         )
         self._dispatcher = create_dispatcher(router)
 
+        # 6. Scheduler
+        self._scheduler = SchedulerService(
+            reminder_repo=self._reminder_repo,
+            bot=self._bot,
+        )
+
         logger.info("DI container initialised — all services ready")
 
     async def shutdown(self) -> None:
         """Gracefully tear down resources."""
         logger.info("Shutting down DI container")
+        if self._scheduler:
+            await self._scheduler.stop()
         if self._tools:
             await self._tools.shutdown()
         if self._transcription:
@@ -183,3 +200,9 @@ class Container:
         """Return the Telegram dispatcher."""
         assert self._dispatcher is not None, "Container not initialised"
         return self._dispatcher
+
+    @property
+    def scheduler(self) -> SchedulerService:
+        """Return the scheduler service."""
+        assert self._scheduler is not None, "Container not initialised"
+        return self._scheduler

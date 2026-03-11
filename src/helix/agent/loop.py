@@ -172,7 +172,7 @@ class AgentLoop:
             else:
                 try:
                     logger.info("Executing tool", extra={"tool": tc.name, "args": tc.arguments})
-                    result = await tool.run(**tc.arguments)
+                    result = await tool.run(**tc.arguments, _user_id=context.user_id)
                 except ToolError as exc:
                     result = f"Tool error: {exc}"
                     logger.error(
