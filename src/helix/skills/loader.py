@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 # Registry mapping builtin skill names -> their tool classes.
 _BUILTIN_SKILLS: dict[str, type] = {}
 
+# Groups allow a single config entry to register multiple related tools.
+# e.g. name: "gog" -> registers gog_gmail, gog_calendar, gog_sheets.
+_BUILTIN_GROUPS: dict[str, list[str]] = {}
+
 
 def _discover_builtins() -> None:
     """Populate ``_BUILTIN_SKILLS`` with known builtin tool classes."""
@@ -31,6 +35,9 @@ def _discover_builtins() -> None:
     for cls in [GetCurrentTimeTool, GogGmailTool, GogCalendarTool, GogSheetsTool]:
         instance = cls()
         _BUILTIN_SKILLS[instance.name] = cls
+
+    # Group definitions — map a single config name to multiple tool names.
+    _BUILTIN_GROUPS["gog"] = ["gog_gmail", "gog_calendar", "gog_sheets"]
 
 
 async def load_skills(
@@ -62,13 +69,28 @@ async def load_skills(
 
 
 async def _load_builtin(registry: ToolRegistry, skill: SkillConfig) -> None:
-    """Register a builtin tool by name."""
+    """Register a builtin tool by name (or all tools in a group)."""
+    # Direct match — single tool.
     cls = _BUILTIN_SKILLS.get(skill.name)
-    if cls is None:
-        logger.warning("Builtin skill not found — skipping", extra={"skill": skill.name})
+    if cls is not None:
+        registry.register(cls())
+        logger.info("Loaded builtin skill", extra={"skill": skill.name})
         return
-    registry.register(cls())
-    logger.info("Loaded builtin skill", extra={"skill": skill.name})
+
+    # Group match — register every tool in the group.
+    group = _BUILTIN_GROUPS.get(skill.name)
+    if group is not None:
+        for tool_name in group:
+            tool_cls = _BUILTIN_SKILLS.get(tool_name)
+            if tool_cls is not None:
+                registry.register(tool_cls())
+                logger.info(
+                    "Loaded builtin skill (group)",
+                    extra={"group": skill.name, "skill": tool_name},
+                )
+        return
+
+    logger.warning("Builtin skill not found — skipping", extra={"skill": skill.name})
 
 
 async def _load_mcp(registry: ToolRegistry, skill: SkillConfig) -> None:
