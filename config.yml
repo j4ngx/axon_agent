@@ -49,6 +49,10 @@ skills:
     type: "builtin"
     enabled: true
 
+  # Reminder tool is registered directly via DI (not via the skill loader)
+  # because it requires a repository dependency.
+  # No entry needed here — it's always available.
+
   # Example MCP tool (uncomment and install `mcp` extra to enable):
   # - name: "web_search"
   #   type: "mcp"
