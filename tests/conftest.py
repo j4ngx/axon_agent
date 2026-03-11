@@ -48,18 +48,31 @@ def settings(tmp_path) -> Settings:
 
 @pytest.fixture
 def mock_firestore_client():
-    """Returns a mock AsyncClient."""
-    mock_client = MagicMock()
-    mock_collection = MagicMock()
-    mock_document = MagicMock()
-    mock_document.set = AsyncMock()
-    mock_collection.document.return_value = mock_document
+    """Returns a mock AsyncClient that models the sub-collection chain.
 
+    Firestore path: ``users/{user_id}/messages/{message_id}``
+    """
+    mock_client = MagicMock()
+
+    # users collection → user document → messages sub-collection
+    mock_users_coll = MagicMock()
+    mock_user_doc = MagicMock()
+    mock_messages_coll = MagicMock()
+
+    mock_client.collection.return_value = mock_users_coll
+    mock_users_coll.document.return_value = mock_user_doc
+    mock_user_doc.collection.return_value = mock_messages_coll
+
+    # Write path: messages_coll.document() → msg_doc with async set()
+    mock_msg_doc = MagicMock()
+    mock_msg_doc.set = AsyncMock()
+    mock_messages_coll.document.return_value = mock_msg_doc
+
+    # Read path: messages_coll.order_by().limit() → query with async get()
     mock_query = MagicMock()
     mock_query.get = AsyncMock(return_value=[])
-    mock_collection.where.return_value.order_by.return_value.limit.return_value = mock_query
+    mock_messages_coll.order_by.return_value.limit.return_value = mock_query
 
-    mock_client.collection.return_value = mock_collection
     return mock_client
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from helix.memory.repositories import ChatHistoryRepository
 
@@ -15,8 +15,14 @@ class TestChatHistoryRepository:
         self, mock_firestore_client: MagicMock
     ) -> None:
         repository = ChatHistoryRepository(mock_firestore_client)
-        mock_doc = mock_firestore_client.collection.return_value.document.return_value
-        mock_doc.id = "test-doc-123"
+        # Navigate the sub-collection chain: users → {uid} → messages → {doc}
+        mock_msg_doc = (
+            mock_firestore_client.collection.return_value
+            .document.return_value
+            .collection.return_value
+            .document.return_value
+        )
+        mock_msg_doc.id = "test-doc-123"
 
         msg = await repository.save_message(user_id=1, role="user", content="hello")
 
@@ -24,8 +30,8 @@ class TestChatHistoryRepository:
         assert msg.user_id == 1
         assert msg.role == "user"
         assert msg.content == "hello"
-        mock_doc.set.assert_called_once()
-        saved_dict = mock_doc.set.call_args[0][0]
+        mock_msg_doc.set.assert_called_once()
+        saved_dict = mock_msg_doc.set.call_args[0][0]
         assert saved_dict["user_id"] == 1
         assert saved_dict["role"] == "user"
 
@@ -43,10 +49,15 @@ class TestChatHistoryRepository:
         self, mock_firestore_client: MagicMock
     ) -> None:
         repository = ChatHistoryRepository(mock_firestore_client)
-        mock_coll = mock_firestore_client.collection.return_value
-        mock_query = mock_coll.where.return_value.order_by.return_value.limit.return_value
+        # Navigate the sub-collection chain: users → {uid} → messages
+        mock_messages_coll = (
+            mock_firestore_client.collection.return_value
+            .document.return_value
+            .collection.return_value
+        )
+        mock_query = mock_messages_coll.order_by.return_value.limit.return_value
 
-        # Mock returned docs
+        # Mock returned docs (descending order from Firestore)
         doc1 = MagicMock()
         doc1.id = "msg2"
         doc1.to_dict.return_value = {
@@ -65,7 +76,7 @@ class TestChatHistoryRepository:
             "timestamp": datetime.now(UTC),
         }
 
-        mock_query.get.return_value = [doc1, doc2]
+        mock_query.get = AsyncMock(return_value=[doc1, doc2])
 
         history = await repository.get_recent_history(user_id=42, limit=10)
         assert len(history) == 2
