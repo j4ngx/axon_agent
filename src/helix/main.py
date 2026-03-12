@@ -29,7 +29,17 @@ async def async_main() -> None:
 
     # 2. Logging
     setup_logging(level=settings.logging.level)
-    logger.info("Helix starting", extra={"version": "0.1.0"})
+    logger.info(
+        "Helix starting",
+        extra={
+            "version": "0.1.0",
+            "groq_key_set": bool(settings.groq_api_key),
+            "openrouter_key_set": bool(settings.openrouter_api_key),
+            "groq_model": settings.llm.groq.model,
+            "openrouter_model": settings.llm.openrouter.model,
+            "skills_count": len(settings.skills),
+        },
+    )
 
     # 3. DI container
     container = Container(settings)

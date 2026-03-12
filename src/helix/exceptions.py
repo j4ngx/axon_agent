@@ -13,6 +13,14 @@ class LLMError(HelixError):
     """Raised when an LLM backend call fails irrecoverably."""
 
 
+class LLMRateLimitError(LLMError):
+    """Raised when the LLM backend returns a rate-limit (429) response."""
+
+
+class LLMToolUseError(LLMError):
+    """Raised when the LLM generates a malformed tool call (Groq tool_use_failed)."""
+
+
 class ToolError(HelixError):
     """Raised when a tool invocation fails."""
 

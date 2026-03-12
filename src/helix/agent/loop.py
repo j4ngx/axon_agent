@@ -21,7 +21,7 @@ from typing import Any
 
 from helix.agent.context import AgentContext
 from helix.config.settings import Settings
-from helix.exceptions import LLMError, ToolError
+from helix.exceptions import LLMError, LLMToolUseError, ToolError
 from helix.llm.base import LLMClient, LLMResponse
 from helix.memory.repositories import ChatHistoryRepository
 from helix.tools.registry import ToolRegistry
@@ -89,6 +89,16 @@ class AgentLoop:
 
             try:
                 response = await self._call_llm(context)
+            except LLMToolUseError:
+                logger.warning(
+                    "LLM generated malformed tool call — retrying without tools",
+                    extra={"user_id": user_id, "iteration": iteration},
+                )
+                try:
+                    response = await self._call_llm(context, use_tools=False)
+                except LLMError:
+                    logger.exception("LLM call failed (no-tools retry)")
+                    return _FALLBACK_RESPONSE
             except LLMError:
                 logger.exception("LLM call failed during agent loop")
                 return _FALLBACK_RESPONSE
@@ -156,9 +166,9 @@ class AgentLoop:
             max_iterations=self._max_iterations,
         )
 
-    async def _call_llm(self, context: AgentContext) -> LLMResponse:
+    async def _call_llm(self, context: AgentContext, *, use_tools: bool = True) -> LLMResponse:
         """Send the current context to the LLM."""
-        tools_schema = self._tools.get_openai_tools_schema() or None
+        tools_schema = self._tools.get_openai_tools_schema() or None if use_tools else None
         return await self._llm.generate(context.messages, tools=tools_schema)
 
     async def _handle_tool_calls(

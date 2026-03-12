@@ -1,2 +1,7 @@
 [pip]
 index-url = "https://pypi.org/simple"
+
+# Override UV_DEFAULT_INDEX env var so the lock file always resolves from PyPI
+[[index]]
+url = "https://pypi.org/simple"
+default = true

@@ -87,16 +87,24 @@ class Container:
         self._reminder_repo = ReminderRepository(self._firestore_client)
 
         # 2. LLM clients
+        if not self._settings.groq_api_key:
+            logger.warning("GROQ_API_KEY is not set — primary LLM will fail")
         groq = GroqLLMClient(
             api_key=self._settings.groq_api_key,
             model=self._settings.llm.groq.model,
             timeout=self._settings.llm.groq.timeout,
         )
-        openrouter = OpenRouterLLMClient(
-            api_key=self._settings.openrouter_api_key,
-            model=self._settings.llm.openrouter.model,
-            timeout=self._settings.llm.openrouter.timeout,
-        )
+
+        openrouter: OpenRouterLLMClient | None = None
+        if self._settings.openrouter_api_key:
+            openrouter = OpenRouterLLMClient(
+                api_key=self._settings.openrouter_api_key,
+                model=self._settings.llm.openrouter.model,
+                timeout=self._settings.llm.openrouter.timeout,
+            )
+        else:
+            logger.warning("OPENROUTER_API_KEY is not set — fallback LLM disabled")
+
         self._openrouter = openrouter
         self._llm = FallbackLLMClient(primary=groq, fallback=openrouter)
 
