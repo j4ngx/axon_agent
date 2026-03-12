@@ -178,10 +178,12 @@ class Settings(BaseSettings):
 
     @field_validator("telegram_allowed_user_ids", mode="before")
     @classmethod
-    def parse_allowed_user_ids(cls, value: str | list[int]) -> list[int]:
-        """Accept a comma-separated string *or* an already-parsed list."""
+    def parse_allowed_user_ids(cls, value: str | int | list[int]) -> list[int]:
+        """Accept a comma-separated string, a single int, or an already-parsed list."""
         if isinstance(value, str):
             return [int(uid.strip()) for uid in value.split(",") if uid.strip()]
+        if isinstance(value, int):
+            return [value]
         return value
 
     @field_validator("google_application_credentials", mode="after")
