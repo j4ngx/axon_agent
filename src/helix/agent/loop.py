@@ -188,7 +188,10 @@ class AgentLoop:
                 logger.warning("Unknown tool requested", extra={"tool": tc.name})
             else:
                 try:
-                    logger.info("Executing tool", extra={"tool": tc.name, "tool_args": tc.arguments})
+                    logger.info(
+                        "Executing tool",
+                        extra={"tool": tc.name, "tool_args": tc.arguments},
+                    )
                     result = await tool.run(**tc.arguments, _user_id=context.user_id)
                 except ToolError as exc:
                     result = f"Tool error: {exc}"
