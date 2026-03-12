@@ -26,7 +26,7 @@ llm:
 # -- Agent --------------------------------------------------------------------
 agent:
   max_iterations: 5
-  history_limit: 20
+  history_limit: 10
   system_prompt_path: "prompts/system_prompt.md"
 
 # -- Memory / Persistence ----------------------------------------------------
@@ -49,14 +49,52 @@ skills:
     type: "builtin"
     enabled: true
 
+  - name: "web_search"
+    type: "builtin"
+    enabled: true
+
+  - name: "system_info"
+    type: "builtin"
+    enabled: true
+
+  - name: "url_fetch"
+    type: "builtin"
+    enabled: true
+
+  - name: "note"
+    type: "builtin"
+    enabled: true
+
   # Reminder tool is registered directly via DI (not via the skill loader)
   # because it requires a repository dependency.
   # No entry needed here — it's always available.
 
-  # Example MCP tool (uncomment and install `mcp` extra to enable):
-  # - name: "web_search"
+  # ---------------------------------------------------------------------------
+  # MCP Skills — external MCP servers connected via stdio transport.
+  # Install mcp extra first: uv sync --extra mcp
+  # ---------------------------------------------------------------------------
+
+  # Apple ecosystem (requires iMCP.app installed and running on macOS 15.3+)
+  # Download from: https://github.com/nicolo-mn/iMCP
+  # - name: "imcp"
   #   type: "mcp"
   #   enabled: true
+  #   transport: "stdio"
+  #   command: "/Applications/iMCP.app/Contents/MacOS/imcp-server"
+  #   args: []
+
+  # Siri Shortcuts — expose all macOS/iOS shortcuts as tools
+  # - name: "siri_shortcuts"
+  #   type: "mcp"
+  #   enabled: true
+  #   transport: "stdio"
+  #   command: "npx"
+  #   args: ["-y", "mcp-server-siri-shortcuts"]
+
+  # Brave Web Search via MCP (alternative to builtin web_search)
+  # - name: "brave_search_mcp"
+  #   type: "mcp"
+  #   enabled: false
   #   transport: "stdio"
   #   command: "npx"
   #   args: ["-y", "@anthropic/mcp-server-web-search"]

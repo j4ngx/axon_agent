@@ -26,7 +26,7 @@ llm:
 # -- Agent --------------------------------------------------------------------
 agent:
   max_iterations: 5
-  history_limit: 20
+  history_limit: 10
   system_prompt_path: "prompts/system_prompt.md"
 
 # -- Memory / Persistence ----------------------------------------------------
