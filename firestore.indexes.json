@@ -46,6 +46,15 @@
   //     ]
   //   },
   // ]
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "reminders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "trigger_at", "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }
