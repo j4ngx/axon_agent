@@ -89,7 +89,10 @@ class GroqLLMClient:
                 "Groq API error",
                 extra={"status": getattr(exc, 'status_code', None), "error": str(exc)},
             )
-            raise LLMError(f"Groq API error (status={getattr(exc, 'status_code', '?')}): {exc}") from exc
+            status = getattr(exc, 'status_code', '?')
+            raise LLMError(
+                f"Groq API error (status={status}): {exc}"
+            ) from exc
         except Exception as exc:
             logger.error(
                 "Groq unexpected error",
