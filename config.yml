@@ -65,6 +65,23 @@ skills:
     type: "builtin"
     enabled: true
 
+  # -- Homeserver Integration -----------------------------------------------
+  - name: "docker_manage"
+    type: "builtin"
+    enabled: true
+
+  - name: "pihole"
+    type: "builtin"
+    enabled: true
+
+  - name: "uptime_monitor"
+    type: "builtin"
+    enabled: true
+
+  - name: "homeserver_health"
+    type: "builtin"
+    enabled: true
+
   # Reminder tool is registered directly via DI (not via the skill loader)
   # because it requires a repository dependency.
   # No entry needed here — it's always available.

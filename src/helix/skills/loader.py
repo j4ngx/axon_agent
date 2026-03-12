@@ -28,11 +28,32 @@ def _discover_builtins() -> None:
     if _BUILTIN_SKILLS:
         return
 
+    from helix.tools.docker_manage import DockerManageTool
     from helix.tools.get_current_time import GetCurrentTimeTool
     from helix.tools.gog import GogCalendarTool, GogGmailTool, GogSheetsTool
+    from helix.tools.homeserver_health import HomeserverHealthTool
+    from helix.tools.note import NoteTool
+    from helix.tools.pihole import PiholeTool
+    from helix.tools.system_info import SystemInfoTool
+    from helix.tools.uptime_monitor import UptimeMonitorTool
+    from helix.tools.url_fetch import UrlFetchTool
+    from helix.tools.web_search import WebSearchTool
 
     # Add new builtins here:
-    for cls in [GetCurrentTimeTool, GogGmailTool, GogCalendarTool, GogSheetsTool]:
+    for cls in [
+        GetCurrentTimeTool,
+        GogGmailTool,
+        GogCalendarTool,
+        GogSheetsTool,
+        WebSearchTool,
+        SystemInfoTool,
+        UrlFetchTool,
+        NoteTool,
+        DockerManageTool,
+        PiholeTool,
+        UptimeMonitorTool,
+        HomeserverHealthTool,
+    ]:
         instance = cls()
         _BUILTIN_SKILLS[instance.name] = cls
 
