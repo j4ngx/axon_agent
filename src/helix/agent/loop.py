@@ -135,14 +135,16 @@ class AgentLoop:
         if history and history[-1].role == "user":
             for msg in history[:-1]:
                 messages.append({"role": msg.role, "content": msg.content})
-            messages.append({
-                "role": "system",
-                "content": (
-                    "The messages above are conversation history for context only. "
-                    "Do NOT re-execute or continue actions from previous turns. "
-                    "Respond exclusively to the user's new message below."
-                ),
-            })
+            messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        "The messages above are conversation history for context only. "
+                        "Do NOT re-execute or continue actions from previous turns. "
+                        "Respond exclusively to the user's new message below."
+                    ),
+                }
+            )
             messages.append({"role": "user", "content": history[-1].content})
         else:
             for msg in history:

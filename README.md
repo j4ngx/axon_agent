@@ -25,8 +25,8 @@ A personal, local-first AI agent with Telegram interface, LLM reasoning, tool ex
 # Clone and enter
 git clone <repo-url> helix_agent && cd helix_agent
 
-# Install dependencies
-uv sync
+# Install dependencies (clear UV_DEFAULT_INDEX to ensure PyPI is used)
+UV_DEFAULT_INDEX= uv sync
 
 # Configure
 cp .env.example .env
@@ -35,8 +35,12 @@ cp config.example.yml config.yml
 # Edit config.yml to customise models, agent behaviour, skills
 
 # Run
-uv run helix
+UV_DEFAULT_INDEX= uv run helix
 ```
+
+> **Note:** If your shell sets `UV_DEFAULT_INDEX` (e.g., a corporate registry),
+> you must clear it before running `uv` commands. See
+> [Development → Package Index Override](#package-index-override) for details.
 
 ## Configuration
 
@@ -171,7 +175,7 @@ firebase deploy --only firestore:indexes
 
 ### MCP Server
 
-1. Install the MCP extra: `uv sync --extra mcp`
+1. Install the MCP extra: `UV_DEFAULT_INDEX= uv sync --extra mcp`
 2. Add an entry to `config.yml`:
 
 ```yaml
@@ -188,28 +192,69 @@ skills:
 
 ## Development
 
+### Package Index Override
+
+This project uses [PyPI](https://pypi.org/simple) as its package index, configured
+in `uv.toml`. However, the `uv` CLI respects the environment variable
+`UV_DEFAULT_INDEX` — if your shell defines it (e.g., pointing to a corporate or
+private registry), it will **silently override** the project setting and resolve
+packages from that registry instead.
+
+This causes two concrete problems:
+
+1. `uv sync` / `uv lock` regenerate `uv.lock` with URLs from the overridden
+   registry instead of PyPI, producing a noisy diff.
+2. Dependency resolution may fail or pull unexpected versions if the private
+   registry doesn't mirror every package.
+
+**Fix:** clear the variable before any `uv` command:
+
+```bash
+# One-time — clear the override for a single command
+UV_DEFAULT_INDEX= uv sync --all-extras
+
+# Or export for the whole session
+unset UV_DEFAULT_INDEX
+uv sync --all-extras
+```
+
+If `uv.lock` was accidentally regenerated with a wrong registry, restore it:
+
+```bash
+UV_DEFAULT_INDEX= uv lock --upgrade   # regenerate from PyPI
+```
+
+> **Tip:** Add `unset UV_DEFAULT_INDEX` to a project-specific `.envrc`
+> (with [direnv](https://direnv.net/)) so it is cleared automatically when you
+> `cd` into the repo.
+
+### Common Commands
+
 ```bash
 # Install dev dependencies
-uv sync --all-extras
+UV_DEFAULT_INDEX= uv sync --all-extras
 
 # Run tests
-uv run python -m pytest tests/
+UV_DEFAULT_INDEX= uv run python -m pytest tests/
 
 # Run tests with coverage
-uv run python -m pytest tests/ --cov=src/helix --cov-report=html
+UV_DEFAULT_INDEX= uv run python -m pytest tests/ --cov=src/helix --cov-report=html
 
 # Format
-uv run ruff format
+UV_DEFAULT_INDEX= uv run ruff format
 
 # Lint (with auto-fix)
-uv run ruff check --fix
+UV_DEFAULT_INDEX= uv run ruff check --fix
 
 # Deploy Firestore config
 firebase deploy --only firestore
 
 # Run the bot
-uv run helix
+UV_DEFAULT_INDEX= uv run helix
 ```
+
+> If your shell does **not** set `UV_DEFAULT_INDEX`, the `UV_DEFAULT_INDEX=`
+> prefix is harmless and can be omitted.
 
 ## Architecture
 

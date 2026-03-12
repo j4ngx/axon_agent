@@ -15,13 +15,9 @@ class TestChatHistoryRepository:
         self, mock_firestore_client: MagicMock
     ) -> None:
         repository = ChatHistoryRepository(mock_firestore_client)
-        # Navigate the sub-collection chain: users → {uid} → messages → {doc}
-        mock_msg_doc = (
-            mock_firestore_client.collection.return_value
-            .document.return_value
-            .collection.return_value
-            .document.return_value
-        )
+        # Navigate: users → {uid} → messages → {doc}
+        mock_user_doc = mock_firestore_client.collection.return_value.document.return_value
+        mock_msg_doc = mock_user_doc.collection.return_value.document.return_value
         mock_msg_doc.id = "test-doc-123"
 
         msg = await repository.save_message(user_id=1, role="user", content="hello")
@@ -49,12 +45,9 @@ class TestChatHistoryRepository:
         self, mock_firestore_client: MagicMock
     ) -> None:
         repository = ChatHistoryRepository(mock_firestore_client)
-        # Navigate the sub-collection chain: users → {uid} → messages
-        mock_messages_coll = (
-            mock_firestore_client.collection.return_value
-            .document.return_value
-            .collection.return_value
-        )
+        # Navigate: users → {uid} → messages
+        mock_user_doc = mock_firestore_client.collection.return_value.document.return_value
+        mock_messages_coll = mock_user_doc.collection.return_value
         mock_query = mock_messages_coll.order_by.return_value.limit.return_value
 
         # Mock returned docs (descending order from Firestore)
