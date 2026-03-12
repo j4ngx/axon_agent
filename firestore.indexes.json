@@ -49,7 +49,7 @@
   "indexes": [
     {
       "collectionGroup": "reminders",
-      "queryScope": "COLLECTION",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "trigger_at", "order": "ASCENDING" }

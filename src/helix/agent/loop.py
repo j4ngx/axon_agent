@@ -128,8 +128,25 @@ class AgentLoop:
         )
 
         messages: list[dict[str, Any]] = [{"role": "system", "content": system_prompt}]
-        for msg in history:
-            messages.append({"role": msg.role, "content": msg.content})
+
+        # Separate conversation history from the latest user message so the LLM
+        # does not "replay" tool actions that only appear as text summaries in
+        # previous assistant responses.
+        if history and history[-1].role == "user":
+            for msg in history[:-1]:
+                messages.append({"role": msg.role, "content": msg.content})
+            messages.append({
+                "role": "system",
+                "content": (
+                    "The messages above are conversation history for context only. "
+                    "Do NOT re-execute or continue actions from previous turns. "
+                    "Respond exclusively to the user's new message below."
+                ),
+            })
+            messages.append({"role": "user", "content": history[-1].content})
+        else:
+            for msg in history:
+                messages.append({"role": msg.role, "content": msg.content})
 
         return AgentContext(
             user_id=user_id,
