@@ -19,10 +19,10 @@ COPY pyproject.toml uv.lock* README.md* ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --extra mcp --no-install-project
 
-# Copy source code and install the project itself
+# Copy source code and install the project itself (non-editable so .venv is portable)
 COPY src/ src/
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --extra mcp
+    uv sync --frozen --no-dev --extra mcp --no-editable
 
 # ---------------------------------------------------------------------------
 # Stage 2 — Runtime
