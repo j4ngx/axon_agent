@@ -11,7 +11,7 @@ from typing import Any
 
 import httpx
 
-from helix.exceptions import LLMError
+from helix.exceptions import LLMError, LLMRateLimitError
 from helix.llm.base import LLMResponse, ToolCallRequest
 
 logger = logging.getLogger(__name__)
@@ -88,6 +88,10 @@ class OpenRouterLLMClient:
                 "OpenRouter HTTP error",
                 extra={"status": exc.response.status_code, "body": exc.response.text[:500]},
             )
+            if exc.response.status_code == 429:
+                raise LLMRateLimitError(
+                    f"OpenRouter rate limit: {exc.response.text[:200]}"
+                ) from exc
             raise LLMError(f"OpenRouter HTTP {exc.response.status_code}") from exc
         except httpx.RequestError as exc:
             logger.error("OpenRouter request error", extra={"error": str(exc)})
