@@ -95,7 +95,7 @@ class AgentConfig(BaseModel):
     """Agent loop configuration."""
 
     max_iterations: int = 5
-    history_limit: int = 20
+    history_limit: int = 4
     system_prompt_path: str = "prompts/system_prompt.md"
 
     def load_system_prompt(self) -> str:
@@ -153,7 +153,7 @@ class DocumentConfig(BaseModel):
 class TTSConfig(BaseModel):
     """ElevenLabs text-to-speech configuration."""
 
-    voice_id: str = "Ir1QNHvhaJXbAGhT50w3"
+    voice_id: str = "JBFqnCBsd6RMkjVDRZzb"
     model_id: str = "eleven_multilingual_v2"
     output_format: str = "mp3_44100_128"
 

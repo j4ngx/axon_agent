@@ -26,7 +26,7 @@ llm:
 # -- Agent --------------------------------------------------------------------
 agent:
   max_iterations: 5
-  history_limit: 6
+  history_limit: 4
   system_prompt_path: "prompts/system_prompt.md"
 
 # -- Memory / Persistence ----------------------------------------------------
@@ -54,7 +54,7 @@ document:
 
 # -- Text-to-Speech (ElevenLabs) ----------------------------------------------
 tts:
-  voice_id: "Ir1QNHvhaJXbAGhT50w3"
+  voice_id: "JBFqnCBsd6RMkjVDRZzb"    # George — free-tier pre-made voice
   model_id: "eleven_multilingual_v2"
   output_format: "mp3_44100_128"
 
