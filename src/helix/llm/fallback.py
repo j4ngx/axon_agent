@@ -72,9 +72,7 @@ class FallbackLLMClient:
                 extra={"error": str(primary_exc)},
             )
             try:
-                return await self._call_with_rate_limit_retry(
-                    self._fallback, messages, tools
-                )
+                return await self._call_with_rate_limit_retry(self._fallback, messages, tools)
             except LLMError as fallback_exc:
                 logger.error(
                     "Fallback LLM also failed",

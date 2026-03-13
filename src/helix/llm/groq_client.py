@@ -81,18 +81,16 @@ class GroqLLMClient:
                 raise LLMToolUseError(f"Groq tool_use_failed: {exc}") from exc
             logger.error(
                 "Groq bad request",
-                extra={"status": getattr(exc, 'status_code', None), "error": str(exc)},
+                extra={"status": getattr(exc, "status_code", None), "error": str(exc)},
             )
             raise LLMError(f"Groq bad request: {exc}") from exc
         except APIError as exc:
             logger.error(
                 "Groq API error",
-                extra={"status": getattr(exc, 'status_code', None), "error": str(exc)},
+                extra={"status": getattr(exc, "status_code", None), "error": str(exc)},
             )
-            status = getattr(exc, 'status_code', '?')
-            raise LLMError(
-                f"Groq API error (status={status}): {exc}"
-            ) from exc
+            status = getattr(exc, "status_code", "?")
+            raise LLMError(f"Groq API error (status={status}): {exc}") from exc
         except Exception as exc:
             logger.error(
                 "Groq unexpected error",
