@@ -25,14 +25,20 @@ from helix.llm.groq_client import GroqLLMClient
 from helix.llm.openrouter_client import OpenRouterLLMClient
 from helix.llm.transcription import TranscriptionClient
 from helix.memory.db import init_firebase
+from helix.memory.expense_repository import ExpenseRepository
+from helix.memory.habit_repository import HabitRepository
 from helix.memory.reminder_repository import ReminderRepository
 from helix.memory.repositories import ChatHistoryRepository
+from helix.memory.todo_repository import TodoRepository
 from helix.scheduler.service import SchedulerService
 from helix.skills.loader import load_skills
 from helix.telegram.bot import create_bot, create_dispatcher
 from helix.telegram.handlers import create_router
+from helix.tools.expense_tracker import ExpenseTrackerTool
+from helix.tools.habit_tracker import HabitTrackerTool
 from helix.tools.registry import ToolRegistry
 from helix.tools.reminder import ReminderTool
+from helix.tools.todo import TodoTool
 
 if TYPE_CHECKING:
     from aiogram import Bot, Dispatcher
@@ -58,6 +64,9 @@ class Container:
         self._firestore_client: AsyncClient | None = None
         self._memory: ChatHistoryRepository | None = None
         self._reminder_repo: ReminderRepository | None = None
+        self._todo_repo: TodoRepository | None = None
+        self._expense_repo: ExpenseRepository | None = None
+        self._habit_repo: HabitRepository | None = None
         self._llm: FallbackLLMClient | None = None
         self._openrouter: OpenRouterLLMClient | None = None
         self._transcription: TranscriptionClient | None = None
@@ -85,6 +94,9 @@ class Container:
         )
         self._memory = ChatHistoryRepository(self._firestore_client)
         self._reminder_repo = ReminderRepository(self._firestore_client)
+        self._todo_repo = TodoRepository(self._firestore_client)
+        self._expense_repo = ExpenseRepository(self._firestore_client)
+        self._habit_repo = HabitRepository(self._firestore_client)
 
         # 2. LLM clients
         if not self._settings.groq_api_key:
@@ -115,8 +127,11 @@ class Container:
             skill_configs=self._settings.skills,
         )
 
-        # 3b. Reminder tool (needs DI — registered after load_skills)
+        # 3b. DI tools (need repositories — registered after load_skills)
         self._tools.register(ReminderTool(repository=self._reminder_repo))
+        self._tools.register(TodoTool(repository=self._todo_repo))
+        self._tools.register(ExpenseTrackerTool(repository=self._expense_repo))
+        self._tools.register(HabitTrackerTool(repository=self._habit_repo))
 
         # 4. Agent
         self._agent = AgentLoop(
