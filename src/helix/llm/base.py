@@ -44,9 +44,10 @@ class ToolCallRequest(BaseModel):
         if raw_args is None:
             arguments: dict[str, Any] = {}
         elif isinstance(raw_args, str):
-            arguments = json.loads(raw_args) if raw_args.strip() else {}
+            parsed = json.loads(raw_args) if raw_args.strip() else {}
+            arguments = parsed if isinstance(parsed, dict) else {}
         else:
-            arguments = raw_args
+            arguments = raw_args if isinstance(raw_args, dict) else {}
         return cls(
             id=tool_call.id,
             name=tool_call.function.name,

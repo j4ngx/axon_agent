@@ -21,7 +21,22 @@ from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Project root = src/helix/config/../../..
-_PROJECT_ROOT: Path = Path(__file__).resolve().parents[3]
+_SOURCE_ROOT: Path = Path(__file__).resolve().parents[3]
+
+
+def _find_project_root() -> Path:
+    """Locate the project root directory.
+
+    When installed as a package (e.g. inside ``.venv``), the source-relative
+    path won't contain ``config.yml``.  Fall back to the current working
+    directory which is ``/app/`` in the Docker container.
+    """
+    if (_SOURCE_ROOT / "config.yml").exists():
+        return _SOURCE_ROOT
+    return Path.cwd()
+
+
+_PROJECT_ROOT: Path = _find_project_root()
 _ENV_FILE: Path = _PROJECT_ROOT / ".env"
 _DEFAULT_CONFIG_YML: Path = _PROJECT_ROOT / "config.yml"
 
