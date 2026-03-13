@@ -385,3 +385,215 @@ class Habit:
         if self.frequency == HabitFrequency.WEEKLY:
             return gap <= 7
         return False
+
+
+# ---------------------------------------------------------------------------
+# Voice Note
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class VoiceNote:
+    """A saved voice-message transcription.
+
+    Attributes:
+        id: Firestore document ID (optional before saving).
+        user_id: Telegram user ID that owns the note.
+        text: Transcribed text content.
+        duration_seconds: Length of the original audio.
+        telegram_file_id: Telegram file_id for re-download.
+        created_at: UTC timestamp of creation.
+    """
+
+    user_id: int
+    text: str
+    duration_seconds: int = 0
+    telegram_file_id: str = ""
+    id: str | None = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a dictionary for Firestore."""
+        return {
+            "user_id": self.user_id,
+            "text": self.text,
+            "duration_seconds": self.duration_seconds,
+            "telegram_file_id": self.telegram_file_id,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], doc_id: str) -> VoiceNote:
+        """Create a VoiceNote from a Firestore document."""
+        return cls(
+            id=doc_id,
+            user_id=data.get("user_id", 0),
+            text=data.get("text", ""),
+            duration_seconds=data.get("duration_seconds", 0),
+            telegram_file_id=data.get("telegram_file_id", ""),
+            created_at=data.get("created_at", datetime.now(UTC)),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Document & DocumentChunk
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Document:
+    """Metadata for an uploaded document (PDF, DOCX, TXT).
+
+    Attributes:
+        id: Firestore document ID (optional before saving).
+        user_id: Telegram user ID that owns the document.
+        filename: Original filename.
+        mime_type: MIME type of the uploaded file.
+        page_count: Number of pages (0 for plain text).
+        chunk_count: Number of text chunks created.
+        created_at: UTC timestamp of creation.
+    """
+
+    user_id: int
+    filename: str
+    mime_type: str = ""
+    page_count: int = 0
+    chunk_count: int = 0
+    id: str | None = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a dictionary for Firestore."""
+        return {
+            "user_id": self.user_id,
+            "filename": self.filename,
+            "mime_type": self.mime_type,
+            "page_count": self.page_count,
+            "chunk_count": self.chunk_count,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], doc_id: str) -> Document:
+        """Create a Document from a Firestore document."""
+        return cls(
+            id=doc_id,
+            user_id=data.get("user_id", 0),
+            filename=data.get("filename", ""),
+            mime_type=data.get("mime_type", ""),
+            page_count=data.get("page_count", 0),
+            chunk_count=data.get("chunk_count", 0),
+            created_at=data.get("created_at", datetime.now(UTC)),
+        )
+
+
+@dataclass
+class DocumentChunk:
+    """A text chunk from a document, optionally with an embedding vector.
+
+    Attributes:
+        id: Firestore document ID (optional before saving).
+        user_id: Telegram user ID that owns the chunk.
+        document_id: Parent document Firestore ID.
+        text: The chunk text content.
+        chunk_index: Position of the chunk within the document.
+        embedding: Optional float-vector embedding.
+    """
+
+    user_id: int
+    document_id: str
+    text: str
+    chunk_index: int = 0
+    embedding: list[float] | None = None
+    id: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a dictionary for Firestore."""
+        return {
+            "user_id": self.user_id,
+            "document_id": self.document_id,
+            "text": self.text,
+            "chunk_index": self.chunk_index,
+            "embedding": self.embedding,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], doc_id: str) -> DocumentChunk:
+        """Create a DocumentChunk from a Firestore document."""
+        return cls(
+            id=doc_id,
+            user_id=data.get("user_id", 0),
+            document_id=data.get("document_id", ""),
+            text=data.get("text", ""),
+            chunk_index=data.get("chunk_index", 0),
+            embedding=data.get("embedding"),
+        )
+
+
+# ---------------------------------------------------------------------------
+# Smart Routine
+# ---------------------------------------------------------------------------
+
+
+class ConditionType(StrEnum):
+    """Condition types for smart routines."""
+
+    HABIT_NOT_LOGGED_BY = "habit_not_logged_by"
+    NO_TODO_COMPLETED_TODAY = "no_todo_completed_today"
+    DAILY_BRIEFING = "daily_briefing"
+    CUSTOM_REMINDER = "custom_reminder"
+
+
+@dataclass
+class Routine:
+    """A conditional automation that fires based on user-defined rules.
+
+    Attributes:
+        id: Firestore document ID (optional before saving).
+        user_id: Telegram user ID that owns the routine.
+        name: Human-readable routine name.
+        condition_type: The type of condition that triggers this routine.
+        condition_params: Type-specific parameters (check_time, habit_id, …).
+        action_message: Message to send when the condition is met.
+        active: Whether the routine is currently enabled.
+        last_triggered: UTC datetime of the last successful trigger.
+        created_at: UTC timestamp of creation.
+    """
+
+    user_id: int
+    name: str
+    condition_type: ConditionType
+    condition_params: dict[str, Any] = field(default_factory=dict)
+    action_message: str = ""
+    active: bool = True
+    last_triggered: datetime | None = None
+    id: str | None = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a dictionary for Firestore."""
+        return {
+            "user_id": self.user_id,
+            "name": self.name,
+            "condition_type": self.condition_type.value,
+            "condition_params": self.condition_params,
+            "action_message": self.action_message,
+            "active": self.active,
+            "last_triggered": self.last_triggered,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any], doc_id: str) -> Routine:
+        """Create a Routine from a Firestore document."""
+        return cls(
+            id=doc_id,
+            user_id=data.get("user_id", 0),
+            name=data.get("name", ""),
+            condition_type=ConditionType(data.get("condition_type", "custom_reminder")),
+            condition_params=data.get("condition_params", {}),
+            action_message=data.get("action_message", ""),
+            active=data.get("active", True),
+            last_triggered=data.get("last_triggered"),
+            created_at=data.get("created_at", datetime.now(UTC)),
+        )
