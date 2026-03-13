@@ -114,6 +114,35 @@ class TelegramConfig(BaseModel):
     allowed_user_ids: list[int] = Field(default_factory=list)
 
 
+class WeatherConfig(BaseModel):
+    """Weather configuration for daily briefing."""
+
+    latitude: float = 37.1773
+    longitude: float = -3.5986
+    location_name: str = "Granada"
+
+
+class VisionConfig(BaseModel):
+    """Vision model configuration."""
+
+    model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
+
+
+class DocumentConfig(BaseModel):
+    """Document processing configuration."""
+
+    chunk_size: int = 800
+    chunk_overlap: int = 100
+
+
+class TTSConfig(BaseModel):
+    """ElevenLabs text-to-speech configuration."""
+
+    voice_id: str = "Ir1QNHvhaJXbAGhT50w3"
+    model_id: str = "eleven_multilingual_v2"
+    output_format: str = "mp3_44100_128"
+
+
 class SkillConfig(BaseModel):
     """Declaration of a single skill (builtin or MCP).
 
@@ -164,6 +193,7 @@ class Settings(BaseSettings):
     telegram_allowed_user_ids: list[int] = Field(default_factory=list)
     groq_api_key: str = ""
     openrouter_api_key: str = ""
+    elevenlabs_api_key: str = ""
     google_application_credentials: str = "./service-account.json"
 
     # -- YAML-sourced config (non-secret) --------------------------------------
@@ -173,6 +203,10 @@ class Settings(BaseSettings):
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     skills: list[SkillConfig] = Field(default_factory=list)
+    weather: WeatherConfig = Field(default_factory=WeatherConfig)
+    vision: VisionConfig = Field(default_factory=VisionConfig)
+    document: DocumentConfig = Field(default_factory=DocumentConfig)
+    tts: TTSConfig = Field(default_factory=TTSConfig)
 
     # -- Validators ------------------------------------------------------------
 
@@ -233,6 +267,14 @@ class Settings(BaseSettings):
             init_kwargs["logging"] = LoggingConfig(**yaml_data["logging"])
         if "skills" in yaml_data:
             init_kwargs["skills"] = [SkillConfig(**s) for s in yaml_data["skills"]]
+        if "weather" in yaml_data:
+            init_kwargs["weather"] = WeatherConfig(**yaml_data["weather"])
+        if "vision" in yaml_data:
+            init_kwargs["vision"] = VisionConfig(**yaml_data["vision"])
+        if "document" in yaml_data:
+            init_kwargs["document"] = DocumentConfig(**yaml_data["document"])
+        if "tts" in yaml_data:
+            init_kwargs["tts"] = TTSConfig(**yaml_data["tts"])
 
         init_kwargs.update(overrides)
         return cls(**init_kwargs)  # type: ignore[arg-type]

@@ -37,6 +37,27 @@ memory:
 logging:
   level: "INFO"
 
+# -- Weather ------------------------------------------------------------------
+weather:
+  latitude: 37.1773
+  longitude: -3.5986
+  location_name: "Granada"
+
+# -- Vision -------------------------------------------------------------------
+vision:
+  model: "meta-llama/llama-4-scout-17b-16e-instruct"
+
+# -- Document Processing ------------------------------------------------------
+document:
+  chunk_size: 800
+  chunk_overlap: 100
+
+# -- Text-to-Speech (ElevenLabs) ----------------------------------------------
+tts:
+  voice_id: "Ir1QNHvhaJXbAGhT50w3"
+  model_id: "eleven_multilingual_v2"
+  output_format: "mp3_44100_128"
+
 # -- Skills -------------------------------------------------------------------
 # Skills are pluggable capabilities loaded at startup.
 # Each entry has a `type` (builtin | mcp) and type-specific config.

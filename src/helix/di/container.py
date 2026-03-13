@@ -20,25 +20,35 @@ from google.cloud.firestore import AsyncClient
 
 from helix.agent.loop import AgentLoop
 from helix.config.settings import Settings
+from helix.llm.embeddings import GroqEmbeddingClient, TfIdfEmbeddingClient
 from helix.llm.fallback import FallbackLLMClient
 from helix.llm.groq_client import GroqLLMClient
 from helix.llm.openrouter_client import OpenRouterLLMClient
 from helix.llm.transcription import TranscriptionClient
+from helix.llm.tts import TTSClient
+from helix.llm.vision import VisionClient
 from helix.memory.db import init_firebase
+from helix.memory.document_repository import DocumentRepository
 from helix.memory.expense_repository import ExpenseRepository
 from helix.memory.habit_repository import HabitRepository
 from helix.memory.reminder_repository import ReminderRepository
 from helix.memory.repositories import ChatHistoryRepository
+from helix.memory.routine_repository import RoutineRepository
 from helix.memory.todo_repository import TodoRepository
+from helix.memory.voice_note_repository import VoiceNoteRepository
 from helix.scheduler.service import SchedulerService
 from helix.skills.loader import load_skills
 from helix.telegram.bot import create_bot, create_dispatcher
 from helix.telegram.handlers import create_router
+from helix.tools.daily_briefing import DailyBriefingTool
+from helix.tools.document_qa import DocumentQATool
 from helix.tools.expense_tracker import ExpenseTrackerTool
 from helix.tools.habit_tracker import HabitTrackerTool
 from helix.tools.registry import ToolRegistry
 from helix.tools.reminder import ReminderTool
+from helix.tools.smart_routine import SmartRoutineTool
 from helix.tools.todo import TodoTool
+from helix.tools.voice_note import VoiceNoteTool
 
 if TYPE_CHECKING:
     from aiogram import Bot, Dispatcher
@@ -67,9 +77,15 @@ class Container:
         self._todo_repo: TodoRepository | None = None
         self._expense_repo: ExpenseRepository | None = None
         self._habit_repo: HabitRepository | None = None
+        self._voice_note_repo: VoiceNoteRepository | None = None
+        self._document_repo: DocumentRepository | None = None
+        self._routine_repo: RoutineRepository | None = None
         self._llm: FallbackLLMClient | None = None
         self._openrouter: OpenRouterLLMClient | None = None
         self._transcription: TranscriptionClient | None = None
+        self._vision: VisionClient | None = None
+        self._tts: TTSClient | None = None
+        self._embedding_client: GroqEmbeddingClient | TfIdfEmbeddingClient | None = None
         self._tools: ToolRegistry | None = None
         self._agent: AgentLoop | None = None
         self._bot: Bot | None = None
@@ -97,6 +113,9 @@ class Container:
         self._todo_repo = TodoRepository(self._firestore_client)
         self._expense_repo = ExpenseRepository(self._firestore_client)
         self._habit_repo = HabitRepository(self._firestore_client)
+        self._voice_note_repo = VoiceNoteRepository(self._firestore_client)
+        self._document_repo = DocumentRepository(self._firestore_client)
+        self._routine_repo = RoutineRepository(self._firestore_client)
 
         # 2. LLM clients
         if not self._settings.groq_api_key:
@@ -120,6 +139,35 @@ class Container:
         self._openrouter = openrouter
         self._llm = FallbackLLMClient(primary=groq, fallback=openrouter)
 
+        # 2b. Vision client
+        vision_cfg = getattr(self._settings, "vision", None)
+        vision_model = getattr(vision_cfg, "model", None) if vision_cfg else None
+        self._vision = VisionClient(
+            api_key=self._settings.groq_api_key,
+            **({"model": vision_model} if vision_model else {}),
+        )
+
+        # 2c. Embedding client (Groq with TF-IDF fallback)
+        try:
+            self._embedding_client = GroqEmbeddingClient(
+                api_key=self._settings.groq_api_key,
+            )
+        except Exception:
+            logger.warning("Groq embedding client unavailable — using TF-IDF fallback")
+            self._embedding_client = TfIdfEmbeddingClient()
+
+        # 2d. TTS client (ElevenLabs — optional)
+        if self._settings.elevenlabs_api_key:
+            tts_cfg = self._settings.tts
+            self._tts = TTSClient(
+                api_key=self._settings.elevenlabs_api_key,
+                voice_id=tts_cfg.voice_id,
+                model_id=tts_cfg.model_id,
+                output_format=tts_cfg.output_format,
+            )
+        else:
+            logger.info("ELEVENLABS_API_KEY not set — TTS disabled")
+
         # 3. Tools — builtin + skills (MCP, etc.)
         self._tools = ToolRegistry()
         await load_skills(
@@ -132,6 +180,22 @@ class Container:
         self._tools.register(TodoTool(repository=self._todo_repo))
         self._tools.register(ExpenseTrackerTool(repository=self._expense_repo))
         self._tools.register(HabitTrackerTool(repository=self._habit_repo))
+        self._tools.register(
+            DailyBriefingTool(
+                todo_repo=self._todo_repo,
+                habit_repo=self._habit_repo,
+                reminder_repo=self._reminder_repo,
+                settings=self._settings,
+            )
+        )
+        self._tools.register(
+            DocumentQATool(
+                document_repo=self._document_repo,
+                embedding_client=self._embedding_client,
+            )
+        )
+        self._tools.register(VoiceNoteTool(repository=self._voice_note_repo))
+        self._tools.register(SmartRoutineTool(repository=self._routine_repo))
 
         # 4. Agent
         self._agent = AgentLoop(
@@ -151,6 +215,11 @@ class Container:
             allowed_user_ids=self._settings.telegram_allowed_user_ids,
             transcription_client=self._transcription,
             bot=self._bot,
+            vision_client=self._vision,
+            voice_note_repo=self._voice_note_repo,
+            document_repo=self._document_repo,
+            embedding_client=self._embedding_client,
+            tts_client=self._tts,
         )
         self._dispatcher = create_dispatcher(router)
 
@@ -158,6 +227,9 @@ class Container:
         self._scheduler = SchedulerService(
             reminder_repo=self._reminder_repo,
             bot=self._bot,
+            routine_repo=self._routine_repo,
+            todo_repo=self._todo_repo,
+            habit_repo=self._habit_repo,
         )
 
         logger.info("DI container initialised — all services ready")
@@ -171,6 +243,12 @@ class Container:
             await self._tools.shutdown()
         if self._transcription:
             await self._transcription.close()
+        if self._vision:
+            await self._vision.close()
+        if self._tts:
+            await self._tts.close()
+        if self._embedding_client and hasattr(self._embedding_client, "close"):
+            await self._embedding_client.close()
         if self._openrouter:
             await self._openrouter.close()
         if self._firestore_client:

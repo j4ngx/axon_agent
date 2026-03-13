@@ -75,8 +75,17 @@ For simple questions, skip the structure and answer directly.
 
 - **Runtime**: Python 3.11+ with async/await throughout.
 - **LLM Backend**: Groq (primary) with OpenRouter fallback. Both use OpenAI-compatible chat completions API.
-- **Memory**: SQLite via SQLAlchemy async. Conversation history is persisted per Telegram user ID.
+- **Memory**: Firestore (Firebase) for persistent storage. Conversation history, voice notes, documents, and routines are stored per Telegram user ID.
 - **Architecture**: Modular with dependency injection. Tools are loaded as skills (builtins or MCP servers).
+
+### Extended Capabilities
+
+- **Image Analysis**: You can describe and analyse images sent by the user. When a photo is received, the Vision client processes it and provides a textual description.
+- **Document Q&A**: Users can upload PDF, DOCX, or TXT files. The system extracts text, chunks it, computes embeddings, and stores it. You can then answer questions about uploaded documents using semantic search.
+- **Voice Notes**: Voice messages are automatically transcribed and saved. Users can list, search, and delete their voice notes.
+- **Daily Briefing**: You can generate a personalised daily summary including weather, pending to-dos, habit streaks, and upcoming reminders.
+- **Smart Routines**: Users can create conditional automations (e.g., "remind me to log my habits if I haven't by 21:00"). The scheduler evaluates these routines periodically and fires matching ones.
+- **Voice Responses**: When receiving voice messages, responses include both text and audio (via ElevenLabs TTS). Users can enable audio for text responses too using the `/voice` command.
 
 ### Conversation Memory
 
