@@ -129,7 +129,7 @@ class DailyBriefingTool(Tool):
 
     async def _habits_section(self, user_id: int) -> str:
         """Show active habits with streak info."""
-        habits = await self._habit_repo.get_habits(user_id)
+        habits = await self._habit_repo.get_active_habits(user_id)
         if not habits:
             return "💪 **Habits**: No habits tracked yet."
 

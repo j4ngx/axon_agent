@@ -214,7 +214,7 @@ def create_router(
             reply = "Something went wrong while processing your message. Please try again."
 
         for chunk in _split_message(reply):
-            await message.answer(chunk, parse_mode="Markdown")
+            await _safe_reply(message, chunk)
 
         # Voice messages always get an audio reply when TTS is available.
         await _send_audio_reply(message, tts_client, reply)
@@ -273,7 +273,7 @@ def create_router(
             reply = "Something went wrong while processing your image."
 
         for chunk in _split_message(reply):
-            await message.answer(chunk, parse_mode="Markdown")
+            await _safe_reply(message, chunk)
 
     # -- Document uploads -----------------------------------------------
 
@@ -386,7 +386,7 @@ def create_router(
 
         # Telegram has a 4096-char limit per message.
         for chunk in _split_message(reply):
-            await message.answer(chunk, parse_mode="Markdown")
+            await _safe_reply(message, chunk)
 
         # Send audio reply if user has voice mode enabled.
         if user_id in _voice_mode_users:
@@ -414,6 +414,14 @@ def _escape_markdown(text: str) -> str:
     for ch in ("_", "*", "`", "["):
         text = text.replace(ch, f"\\{ch}")
     return text
+
+
+async def _safe_reply(message: types.Message, text: str) -> None:
+    """Send *text* with Markdown, falling back to plain text on parse errors."""
+    try:
+        await message.answer(text, parse_mode="Markdown")
+    except Exception:
+        await message.answer(text)
 
 
 _MAX_MESSAGE_LENGTH = 4096
